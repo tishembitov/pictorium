@@ -1,0 +1,31 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+spring:
+  cloud:
+    config:
+      override.system-property: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/pictorium
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /${spring.application.name}/v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
