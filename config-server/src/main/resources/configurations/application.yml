@@ -14,7 +14,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/pictorium
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9090/realms/pictorium}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:9090/realms/pictorium/protocol/openid-connect/certs}
 
 springdoc:
   api-docs:
