@@ -19,12 +19,6 @@ public record UserUpdateDto(
     String telegram,
     
     @Size(max = 100, message = "Pinterest link must not exceed 100 characters")
-    String pinterest,
-
-    String chatColor,
-
-    Integer chatSize,
-
-    Boolean sideOpen
+    String pinterest
 ) {
 }
