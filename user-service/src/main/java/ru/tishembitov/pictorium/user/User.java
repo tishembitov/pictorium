@@ -29,8 +29,8 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-//    @Column(unique = true, nullable = false)
-//    private String email;
+    @Column(unique = true, nullable = false)
+    private String email;
 
     private String image;
 
@@ -38,11 +38,11 @@ public class User {
 
     private String description;
 
-    private String chatColor = "blue";
-
-    private Integer chatSize = 384;
-
-    private Boolean sideOpen = true;
+//    private String chatColor = "blue";
+//
+//    private Integer chatSize = 384;
+//
+//    private Boolean sideOpen = true;
 
     private Long selectedBoard;
 
