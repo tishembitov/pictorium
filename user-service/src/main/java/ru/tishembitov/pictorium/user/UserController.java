@@ -29,19 +29,16 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
-        log.info("GET /me - Fetching current user with Keycloak ID: {}", jwt.getSubject());
-        return ResponseEntity.ok(userService.getUserByKeycloakId(jwt.getSubject()));
+        return ResponseEntity.ok(userService.getCurrentUser(jwt));
     }
 
     @GetMapping("/user_id/{id}")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
-        log.info("GET /user_id/{} - Fetching user by ID", id);
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @GetMapping("/user_username/{username}")
     public ResponseEntity<UserResponseDto> getUserByUsername(@PathVariable String username) {
-        log.info("GET /user_username/{} - Fetching user by username", username);
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
@@ -50,14 +47,19 @@ public class UserController {
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UserUpdateDto userUpdateDto) {
 
-        log.info("PATCH /information - Updating user with Keycloak ID: {}", jwt.getSubject());
+        return ResponseEntity.ok(userService.updateUser(jwt, userUpdateDto));
+    }
 
-        return ResponseEntity.ok(userService.updateUser(jwt.getSubject(), userUpdateDto));
+    @PostMapping("/upload/{id}")
+    public ResponseEntity<UserResponseDto> uploadProfileImage(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file) {
+
+        return ResponseEntity.ok(userService.uploadProfileImage(id, file));
     }
 
     @GetMapping("/upload/{id}")
     public ResponseEntity<Resource> getProfileImage(@PathVariable UUID id) {
-        log.info("GET /upload/{} - Fetching profile image", id);
 
         UserResponseDto user = userService.getUserById(id);
         if (user.image() == null) {
@@ -83,13 +85,11 @@ public class UserController {
             @PathVariable UUID id,
             @RequestParam("file") MultipartFile file) {
 
-        log.info("POST /banner/upload/{} - Uploading banner image", id);
         return ResponseEntity.ok(userService.uploadBannerImage(id, file));
     }
 
     @GetMapping("/banner/upload/{id}")
     public ResponseEntity<Resource> getBannerImage(@PathVariable UUID id) {
-        log.info("GET /banner/upload/{} - Fetching banner image", id);
         UserResponseDto user = userService.getUserById(id);
 
         if (user.bannerImage() == null) {
