@@ -5,6 +5,7 @@ public record UserResponseDto(
      Long id,
      String keycloakId,
      String username,
+     String email,
      String image,
      String bannerImage,
      String description,
@@ -12,9 +13,6 @@ public record UserResponseDto(
      String tiktok,
      String telegram,
      String pinterest,
-     String chatColor,
-     Integer chatSize,
-     Boolean sideOpen,
      Long selectedBoard
 ) {
 }
