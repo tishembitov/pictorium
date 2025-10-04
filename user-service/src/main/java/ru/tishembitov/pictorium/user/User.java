@@ -44,7 +44,7 @@ public class User {
 //
 //    private Boolean sideOpen = true;
 
-    private Long selectedBoard;
+    private UUID selectedBoardId;
 
     private Instant recommendationCreatedAt;
 

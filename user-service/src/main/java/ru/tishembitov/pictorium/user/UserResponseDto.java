@@ -1,8 +1,10 @@
 package ru.tishembitov.pictorium.user;
 
+import java.util.UUID;
+
 public record UserResponseDto(
 
-     Long id,
+     UUID id,
      String keycloakId,
      String username,
      String email,
@@ -13,6 +15,6 @@ public record UserResponseDto(
      String tiktok,
      String telegram,
      String pinterest,
-     Long selectedBoard
+     UUID selectedBoardId
 ) {
 }
