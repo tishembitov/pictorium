@@ -33,18 +33,19 @@ public class UserSynchronizer {
 
 
     private String generateUniqueUsername(String email) {
-        String username = email.substring(0, email.indexOf('@'));
+        String baseUsername = email.substring(0, email.indexOf('@'));
 
-        if (username.contains("+")) {
-            username = username.substring(0, username.indexOf('+'));
+        if (baseUsername.contains("+")) {
+            baseUsername = baseUsername.substring(0, baseUsername.indexOf('+'));
         }
 
-        username = username.replaceAll("[^a-zA-Z0-9._-]", "_");
-        
+        baseUsername = baseUsername.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+        String username = baseUsername;
         int counter = 1;
 
         while (userRepository.existsByUsername(username)) {
-            username += counter;
+            username = baseUsername + counter;
             counter++;
         }
 
