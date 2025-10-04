@@ -81,6 +81,11 @@ public class FileStorageServiceImpl implements FileStorageService {
     public Path getFile(String filePath) {
         try {
             Path path = this.fileStorageLocation.resolve(filePath).normalize();
+
+            if (!path.startsWith(this.fileStorageLocation)) {
+                throw new FileStorageException("Invalid file path: potential path traversal attack");
+            }
+
             if (!Files.exists(path)) {
                 throw new FileStorageException("File not found: " + filePath);
             }
