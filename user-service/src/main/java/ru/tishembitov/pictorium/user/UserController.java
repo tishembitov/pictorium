@@ -42,7 +42,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
-    @PatchMapping("/information")
+    @PatchMapping(value = "/information")
     public ResponseEntity<UserResponseDto> updateUser(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UserUpdateDto userUpdateDto) {
@@ -50,12 +50,12 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(jwt, userUpdateDto));
     }
 
-    @PostMapping("/upload/{id}")
+    @PostMapping("/upload")
     public ResponseEntity<UserResponseDto> uploadProfileImage(
-            @PathVariable UUID id,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(userService.uploadProfileImage(id, file));
+        return ResponseEntity.ok(userService.uploadProfileImage(jwt, file));
     }
 
     @GetMapping("/upload/{id}")
@@ -80,12 +80,12 @@ public class UserController {
         }
     }
 
-    @PostMapping("/banner/upload/{id}")
+    @PostMapping("/banner/upload")
     public ResponseEntity<UserResponseDto> uploadBannerImage(
-            @PathVariable UUID id,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(userService.uploadBannerImage(id, file));
+        return ResponseEntity.ok(userService.uploadBannerImage(jwt, file));
     }
 
     @GetMapping("/banner/upload/{id}")

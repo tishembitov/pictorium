@@ -16,7 +16,7 @@ public interface UserService {
 
     UserResponseDto updateUser(Jwt jwt, @Valid UserUpdateDto userUpdateDto);
 
-    UserResponseDto uploadBannerImage(UUID id, MultipartFile file);
+    UserResponseDto uploadBannerImage(Jwt jwt, MultipartFile file);
 
-    UserResponseDto uploadProfileImage(UUID id, MultipartFile file);
+    UserResponseDto uploadProfileImage(Jwt jwt, MultipartFile file);
 }

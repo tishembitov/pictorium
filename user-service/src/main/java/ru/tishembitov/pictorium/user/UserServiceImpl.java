@@ -72,11 +72,12 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public UserResponseDto uploadBannerImage(UUID id, MultipartFile file) {
-        log.info("Uploading banner image for user ID: {}", id);
+    public UserResponseDto uploadBannerImage(Jwt jwt, MultipartFile file) {
+        String keycloakId = jwt.getSubject();
+        log.info("Uploading banner image for user keycloakId: {}", keycloakId);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        User user = userRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId));
 
         if (user.getBannerImage() != null) {
             fileStorageService.deleteFile(user.getBannerImage());
@@ -86,17 +87,18 @@ public class UserServiceImpl implements UserService{
         user.setBannerImage(bannerPath);
 
         User updatedUser = userRepository.save(user);
-        log.info("Banner image uploaded successfully for user: {}", updatedUser.getId());
+        log.info("Banner image uploaded successfully for user: {}", keycloakId);
 
         return userMapper.toResponseDto(updatedUser);
     }
 
     @Override
-    public UserResponseDto uploadProfileImage(UUID id, MultipartFile file) {
-        log.info("Uploading profile image for user ID: {}", id);
+    public UserResponseDto uploadProfileImage(Jwt jwt, MultipartFile file) {
+        String keycloakId = jwt.getSubject();
+        log.info("Uploading profile image for user keycloakId: {}", keycloakId);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        User user = userRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId));
 
         if (user.getImage() != null) {
             fileStorageService.deleteFile(user.getImage());
@@ -106,7 +108,7 @@ public class UserServiceImpl implements UserService{
         user.setImage(imagePath);
 
         User updatedUser = userRepository.save(user);
-        log.info("Profile image uploaded successfully for user: {}", updatedUser.getId());
+        log.info("Profile image uploaded successfully for user: {}", keycloakId);
 
         return userMapper.toResponseDto(updatedUser);
     }
