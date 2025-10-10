@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
@@ -14,12 +15,13 @@ public class UserSynchronizer {
 
     private final UserRepository userRepository;
 
+    @Transactional
     public User createUserFromToken(Jwt jwt) {
         String email = jwt.getClaimAsString("email");
         String username = generateUniqueUsername(email);
         String keycloakId = jwt.getSubject();
 
-        log.info("Creating new user from token: keycloakId={}, email={}", keycloakId, email);
+        log.info("Creating new user from token: keycloakId={}", keycloakId);
 
         User newUser = User.builder()
                 .keycloakId(keycloakId)
