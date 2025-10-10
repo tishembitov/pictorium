@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService{
     @Override
     public UserResponseDto getUserById(UUID id) {
         log.info("Fetching user by ID: {}", id);
-        User user = getUserOrThrow(id);
+        User user = getUserByIdOrThrow(id);
         return userMapper.toResponseDto(user);
     }
 
@@ -51,7 +51,7 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional
     public UserResponseDto updateUser(Jwt jwt, UserUpdateDto userUpdateDto) {
-        User user = getUserOrThrow(getUserId(jwt));
+        User user = getUserOrThrow(jwt);
 
         if (userUpdateDto.username() != null && !userUpdateDto.username().equals(user.getUsername())) {
             if (userRepository.existsByUsername(userUpdateDto.username())) {
@@ -69,7 +69,7 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional
     public UserResponseDto uploadBannerImage(Jwt jwt, MultipartFile file) {
-        User user = getUserOrThrow(getUserId(jwt));
+        User user = getUserOrThrow(jwt);
 
         if (user.getBannerImage() != null) {
             fileStorageService.deleteFile(user.getBannerImage());
@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional
     public UserResponseDto uploadProfileImage(Jwt jwt, MultipartFile file) {
-        User user = getUserOrThrow(getUserId(jwt));
+        User user = getUserOrThrow(jwt);
 
         if (user.getImage() != null) {
             fileStorageService.deleteFile(user.getImage());
@@ -110,17 +110,16 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public User getUserOrThrow(UUID userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+    public User getUserOrThrow(Jwt jwt) {
+        String keycloakId = jwt.getSubject();
+        return userRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId));
     }
 
     @Override
-    public UUID getUserId(Jwt jwt) {
-        String keycloakId = jwt.getSubject();
-        return userRepository.findByKeycloakId(keycloakId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId))
-                .getId();
+    public User getUserByIdOrThrow(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
 
     @Override

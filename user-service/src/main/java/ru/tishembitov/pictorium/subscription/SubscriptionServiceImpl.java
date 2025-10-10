@@ -26,14 +26,14 @@ public class SubscriptionServiceImpl implements SubscriptionService{
     @Transactional
     public SubscriptionResponseDto followUser(Jwt jwt, UUID userIdToFollow) {
 
-        UUID currentUserId = userService.getUserId(jwt);
+        User currentUser = userService.getUserOrThrow(jwt);
+        UUID currentUserId = currentUser.getId();
 
         if (currentUserId.equals(userIdToFollow)) {
             throw new BadRequestException("User cannot follow themselves");
         }
 
-        User userToFollow = userService.getUserOrThrow(userIdToFollow);
-        User currentUser = userService.getUserOrThrow(currentUserId);
+        User userToFollow = userService.getUserByIdOrThrow(userIdToFollow);
 
         if (subscriptionRepository.existsByFollowerIdAndFollowingId(currentUserId, userIdToFollow)) {
             throw new SubscriptionAlreadyExistsException("Already following this user");
@@ -55,7 +55,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
 
     @Transactional
     public void unfollowUser(Jwt jwt, UUID userIdToUnfollow) {
-        UUID currentUserId = userService.getUserId(jwt);
+        UUID currentUserId = userService.getUserOrThrow(jwt).getId();
 
         if (!subscriptionRepository.existsByFollowerIdAndFollowingId(currentUserId, userIdToUnfollow)) {
             throw new SubscriptionNotFoundException("Subscription not found");
@@ -68,7 +68,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
     }
 
     public FollowCheckResponseDto checkUserFollow(Jwt jwt, UUID userIdToCheck) {
-        UUID currentUserId = userService.getUserId(jwt);
+        UUID currentUserId = userService.getUserOrThrow(jwt).getId();
 
         userService.validateUserExists(currentUserId);
         boolean isFollowing = subscriptionRepository.existsByFollowerIdAndFollowingId(

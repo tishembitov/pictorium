@@ -21,9 +21,9 @@ public interface UserService {
 
     UserResponseDto uploadProfileImage(Jwt jwt, MultipartFile file);
 
-    User getUserOrThrow(UUID userId);
+    User getUserOrThrow(Jwt jwt);
 
-    UUID getUserId(Jwt jwt);
+    User getUserByIdOrThrow(UUID id);
 
     void validateUserExists(UUID userId);
 
