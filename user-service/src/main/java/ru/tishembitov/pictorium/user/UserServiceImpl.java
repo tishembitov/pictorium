@@ -2,7 +2,6 @@ package ru.tishembitov.pictorium.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,8 +122,9 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public Page<UserResponseDto> toResponseDtoPage(Page<User> users) {
-        return userMapper.toResponseDtoPage(users);
+    public UUID getCurrentUserId(Jwt jwt) {
+        String keycloakId = jwt.getSubject();
+        return userRepository.findIdByKeycloakId(keycloakId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId));
     }
-
 }
