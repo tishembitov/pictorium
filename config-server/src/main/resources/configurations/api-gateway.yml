@@ -12,6 +12,11 @@ spring:
           predicates:
             - Path=/api/v1/users/**
 
+        - id: subscriptions-service-route
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/v1/subscriptions/**
+
         - id: user-service-swagger
           uri: lb://USER-SERVICE
           predicates:
