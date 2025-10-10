@@ -1,6 +1,7 @@
 package ru.tishembitov.pictorium.user;
 
 import org.mapstruct.*;
+import org.springframework.data.domain.Page;
 
 @Mapper(
         componentModel = "spring",
@@ -17,4 +18,8 @@ public interface UserMapper {
     @Mapping(target = "image", ignore = true)
     @Mapping(target = "bannerImage", ignore = true)
     void updateUserFromUpdateDto(UserUpdateDto userUpdateDto, @MappingTarget User user);
+
+    default Page<UserResponseDto> toResponseDtoPage(Page<User> userPage) {
+        return userPage.map(this::toResponseDto);
+    }
 }
