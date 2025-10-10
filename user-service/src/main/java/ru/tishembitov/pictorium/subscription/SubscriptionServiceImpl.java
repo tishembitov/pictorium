@@ -61,7 +61,6 @@ public class SubscriptionServiceImpl implements SubscriptionService{
             throw new SubscriptionNotFoundException("Subscription not found");
         }
 
-        userService.validateUserExists(currentUserId);
         subscriptionRepository.deleteByFollowerIdAndFollowingId(currentUserId, userIdToUnfollow);
 
         log.info("User {} unfollowed user {}", currentUserId, userIdToUnfollow);
@@ -70,7 +69,6 @@ public class SubscriptionServiceImpl implements SubscriptionService{
     public FollowCheckResponseDto checkUserFollow(Jwt jwt, UUID userIdToCheck) {
         UUID currentUserId = userService.getUserOrThrow(jwt).getId();
 
-        userService.validateUserExists(currentUserId);
         boolean isFollowing = subscriptionRepository.existsByFollowerIdAndFollowingId(
                 currentUserId, userIdToCheck);
 
