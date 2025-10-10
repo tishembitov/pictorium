@@ -175,29 +175,29 @@ springdoc:
       - name: user-service
         url: /user-service/v3/api-docs
 
-      - name: content-service
-        url: /content-service/v3/api-docs
-
-      - name: social-service
-        url: /social-service/v3/api-docs
-
-      - name: chat-service
-        url: /chat-service/v3/api-docs
-
-      - name: notification-service
-        url: /notification-service/v3/api-docs
-
-      - name: recommendation-service
-        url: /recommendation-service/v3/api-docs
-
-      - name: search-service
-        url: /search-service/v3/api-docs
-
-      - name: media-service
-        url: /media-service/v3/api-docs
-
-      - name: admin-service
-        url: /admin-service/v3/api-docs
+#      - name: content-service
+#        url: /content-service/v3/api-docs
+#
+#      - name: social-service
+#        url: /social-service/v3/api-docs
+#
+#      - name: chat-service
+#        url: /chat-service/v3/api-docs
+#
+#      - name: notification-service
+#        url: /notification-service/v3/api-docs
+#
+#      - name: recommendation-service
+#        url: /recommendation-service/v3/api-docs
+#
+#      - name: search-service
+#        url: /search-service/v3/api-docs
+#
+#      - name: media-service
+#        url: /media-service/v3/api-docs
+#
+#      - name: admin-service
+#        url: /admin-service/v3/api-docs
 
 server:
   port: 8222
