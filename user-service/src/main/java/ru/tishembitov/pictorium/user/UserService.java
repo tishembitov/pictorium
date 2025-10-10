@@ -1,7 +1,6 @@
 package ru.tishembitov.pictorium.user;
 
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,7 +24,8 @@ public interface UserService {
 
     User getUserByIdOrThrow(UUID id);
 
+    UUID getCurrentUserId(Jwt jwt);
+
     void validateUserExists(UUID userId);
 
-    Page<UserResponseDto> toResponseDtoPage(Page<User> users);
 }

@@ -21,6 +21,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserService userService;
+    private final UserMapper userMapper;
     // private final UpdateService updateService; // Для создания уведомлений
 
     @Transactional
@@ -55,7 +56,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
 
     @Transactional
     public void unfollowUser(Jwt jwt, UUID userIdToUnfollow) {
-        UUID currentUserId = userService.getUserOrThrow(jwt).getId();
+        UUID currentUserId = userService.getCurrentUserId(jwt);
 
         if (!subscriptionRepository.existsByFollowerIdAndFollowingId(currentUserId, userIdToUnfollow)) {
             throw new SubscriptionNotFoundException("Subscription not found");
@@ -67,7 +68,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
     }
 
     public FollowCheckResponseDto checkUserFollow(Jwt jwt, UUID userIdToCheck) {
-        UUID currentUserId = userService.getUserOrThrow(jwt).getId();
+        UUID currentUserId = userService.getCurrentUserId(jwt);
 
         boolean isFollowing = subscriptionRepository.existsByFollowerIdAndFollowingId(
                 currentUserId, userIdToCheck);
@@ -79,13 +80,13 @@ public class SubscriptionServiceImpl implements SubscriptionService{
         userService.validateUserExists(userId);
         Page<User> followersPage = subscriptionRepository.findFollowersByUserId(userId, pageable);
 
-        return userService.toResponseDtoPage(followersPage);
+        return userMapper.toResponseDtoPage(followersPage);
     }
 
     public Page<UserResponseDto> getFollowing(UUID userId, Pageable pageable) {
         userService.validateUserExists(userId);
         Page<User> followingPage = subscriptionRepository.findFollowingByUserId(userId, pageable);
 
-        return userService.toResponseDtoPage(followingPage);
+        return userMapper.toResponseDtoPage(followingPage);
     }
 }
