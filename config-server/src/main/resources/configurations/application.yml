@@ -17,6 +17,23 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9090/realms/pictorium}
           jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:9090/realms/pictorium/protocol/openid-connect/certs}
 
+logging:
+  level:
+    root: INFO
+
+    org.springframework: INFO
+    org.springframework.web: DEBUG
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.validator: INFO
+    org.springframework.security: DEBUG
+    org.springdoc: INFO
+    ru.tishembitov.pictorium: DEBUG
+
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr(%-5level){highlight} %clr(%logger{36}){cyan} - %msg%n"
+
 springdoc:
   api-docs:
     enabled: true
