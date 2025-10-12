@@ -2,15 +2,12 @@ package ru.tishembitov.pictorium.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ru.tishembitov.pictorium.exception.UsernameAlreadyExistsException;
 import ru.tishembitov.pictorium.exception.UserNotFoundException;
 import ru.tishembitov.pictorium.file.FileStorageService;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,28 +16,17 @@ public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final UserSynchronizer userSynchronizer;
     private final FileStorageService fileStorageService;
 
     @Override
-    @Transactional
-    public UserResponseDto getCurrentUser(Jwt jwt) {
-        String keycloakId = jwt.getSubject();
-        log.info("Fetching user by Keycloak ID: {}", keycloakId);
-        User user = userRepository.findByKeycloakId(keycloakId)
-                .orElseGet(() -> userSynchronizer.createUserFromToken(jwt));
-        return userMapper.toResponseDto(user);
-    }
-
-    @Override
-    public UserResponseDto getUserById(UUID id) {
+    public UserResponse getUserById(String id) {
         log.info("Fetching user by ID: {}", id);
         User user = getUserByIdOrThrow(id);
         return userMapper.toResponseDto(user);
     }
 
     @Override
-    public UserResponseDto getUserByUsername(String username) {
+    public UserResponse getUserByUsername(String username) {
         log.info("Fetching user by username: {}", username);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
@@ -49,26 +35,26 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public UserResponseDto updateUser(Jwt jwt, UserUpdateDto userUpdateDto) {
-        User user = getUserOrThrow(jwt);
+    public UserResponse updateUser(String id, UserUpdateRequest userUpdateRequest) {
+        User user = getUserByIdOrThrow(id);
 
-        if (userUpdateDto.username() != null && !userUpdateDto.username().equals(user.getUsername())) {
-            if (userRepository.existsByUsername(userUpdateDto.username())) {
-                throw new UsernameAlreadyExistsException("Username '" + userUpdateDto.username() + "' is already taken");
+        if (userUpdateRequest.username() != null && !userUpdateRequest.username().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(userUpdateRequest.username())) {
+                throw new UsernameAlreadyExistsException("Username '" + userUpdateRequest.username() + "' is already taken");
             }
         }
 
-        userMapper.updateUserFromUpdateDto(userUpdateDto, user);
+        userMapper.updateUserFromUpdateDto(userUpdateRequest, user);
         User updatedUser = userRepository.save(user);
 
-        log.info("User updated successfully: {}", user.getId());
+        log.info("User updated successfully: {}", id);
         return userMapper.toResponseDto(updatedUser);
     }
 
     @Override
     @Transactional
-    public UserResponseDto uploadBannerImage(Jwt jwt, MultipartFile file) {
-        User user = getUserOrThrow(jwt);
+    public UserResponse uploadBannerImage(String id, MultipartFile file) {
+        User user = getUserByIdOrThrow(id);
 
         if (user.getBannerImage() != null) {
             fileStorageService.deleteFile(user.getBannerImage());
@@ -78,15 +64,15 @@ public class UserServiceImpl implements UserService{
         user.setBannerImage(bannerPath);
 
         User updatedUser = userRepository.save(user);
-        log.info("Banner image uploaded successfully for user: {}", user.getId());
+        log.info("Banner image uploaded successfully for user: {}", id);
 
         return userMapper.toResponseDto(updatedUser);
     }
 
     @Override
     @Transactional
-    public UserResponseDto uploadProfileImage(Jwt jwt, MultipartFile file) {
-        User user = getUserOrThrow(jwt);
+    public UserResponse uploadProfileImage(String id, MultipartFile file) {
+        User user = getUserByIdOrThrow(id);
 
         if (user.getImage() != null) {
             fileStorageService.deleteFile(user.getImage());
@@ -96,35 +82,21 @@ public class UserServiceImpl implements UserService{
         user.setImage(imagePath);
 
         User updatedUser = userRepository.save(user);
-        log.info("Profile image uploaded successfully for user: {}", user.getId());
+        log.info("Profile image uploaded successfully for user: {}", id);
 
         return userMapper.toResponseDto(updatedUser);
     }
 
     @Override
-    public void validateUserExists(UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new UserNotFoundException("User not found with ID: " + userId);
+    public void validateUserExists(String id) {
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException("User not found with ID: " + id);
         }
     }
 
     @Override
-    public User getUserOrThrow(Jwt jwt) {
-        String keycloakId = jwt.getSubject();
-        return userRepository.findByKeycloakId(keycloakId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId));
-    }
-
-    @Override
-    public User getUserByIdOrThrow(UUID id) {
+    public User getUserByIdOrThrow(String id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
-    }
-
-    @Override
-    public UUID getCurrentUserId(Jwt jwt) {
-        String keycloakId = jwt.getSubject();
-        return userRepository.findIdByKeycloakId(keycloakId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with KeycloakId: " + keycloakId));
     }
 }

@@ -10,16 +10,15 @@ import org.springframework.data.domain.Page;
 )
 public interface UserMapper {
 
-    UserResponseDto toResponseDto(User user);
+    UserResponse toResponseDto(User user);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "keycloakId", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "image", ignore = true)
     @Mapping(target = "bannerImage", ignore = true)
-    void updateUserFromUpdateDto(UserUpdateDto userUpdateDto, @MappingTarget User user);
+    void updateUserFromUpdateDto(UserUpdateRequest userUpdateRequest, @MappingTarget User user);
 
-    default Page<UserResponseDto> toResponseDtoPage(Page<User> userPage) {
+    default Page<UserResponse> toResponseDtoPage(Page<User> userPage) {
         return userPage.map(this::toResponseDto);
     }
 }

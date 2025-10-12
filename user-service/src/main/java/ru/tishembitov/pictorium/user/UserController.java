@@ -8,15 +8,12 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.tishembitov.pictorium.file.FileStorageService;
 
 import java.nio.file.Path;
-import java.util.UUID;
-
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -28,40 +25,40 @@ public class UserController {
     private final FileStorageService fileStorageService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDto> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(userService.getCurrentUser(jwt));
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok(userService.getUserById(authentication.getName()));
     }
 
     @GetMapping("/user_id/{id}")
-    public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @GetMapping("/user_username/{username}")
-    public ResponseEntity<UserResponseDto> getUserByUsername(@PathVariable String username) {
+    public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
     @PatchMapping(value = "/information")
-    public ResponseEntity<UserResponseDto> updateUser(
-            @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody UserUpdateDto userUpdateDto) {
+    public ResponseEntity<UserResponse> updateUser(
+            Authentication authentication,
+            @Valid @RequestBody UserUpdateRequest userUpdateRequest) {
 
-        return ResponseEntity.ok(userService.updateUser(jwt, userUpdateDto));
+        return ResponseEntity.ok(userService.updateUser(authentication.getName(), userUpdateRequest));
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<UserResponseDto> uploadProfileImage(
-            @AuthenticationPrincipal Jwt jwt,
+    public ResponseEntity<UserResponse> uploadProfileImage(
+            Authentication authentication,
             @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(userService.uploadProfileImage(jwt, file));
+        return ResponseEntity.ok(userService.uploadProfileImage(authentication.getName(), file));
     }
 
     @GetMapping("/upload/{id}")
-    public ResponseEntity<Resource> getProfileImage(@PathVariable UUID id) {
+    public ResponseEntity<Resource> getProfileImage(@PathVariable String id) {
 
-        UserResponseDto user = userService.getUserById(id);
+        UserResponse user = userService.getUserById(id);
         if (user.image() == null) {
             return ResponseEntity.notFound().build();
         }
@@ -81,16 +78,16 @@ public class UserController {
     }
 
     @PostMapping("/banner/upload")
-    public ResponseEntity<UserResponseDto> uploadBannerImage(
-            @AuthenticationPrincipal Jwt jwt,
+    public ResponseEntity<UserResponse> uploadBannerImage(
+            Authentication authentication,
             @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(userService.uploadBannerImage(jwt, file));
+        return ResponseEntity.ok(userService.uploadBannerImage(authentication.getName(), file));
     }
 
     @GetMapping("/banner/upload/{id}")
-    public ResponseEntity<Resource> getBannerImage(@PathVariable UUID id) {
-        UserResponseDto user = userService.getUserById(id);
+    public ResponseEntity<Resource> getBannerImage(@PathVariable String id) {
+        UserResponse user = userService.getUserById(id);
 
         if (user.bannerImage() == null) {
             return ResponseEntity.notFound().build();

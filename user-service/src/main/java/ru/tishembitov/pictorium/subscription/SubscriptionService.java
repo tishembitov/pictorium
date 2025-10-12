@@ -2,21 +2,18 @@ package ru.tishembitov.pictorium.subscription;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.oauth2.jwt.Jwt;
-import ru.tishembitov.pictorium.user.UserResponseDto;
-
-import java.util.UUID;
+import ru.tishembitov.pictorium.user.UserResponse;
 
 public interface SubscriptionService {
-    SubscriptionResponseDto followUser(Jwt jwt, UUID userIdToFollow);
+    SubscriptionResponse followUser(String id, String userIdToFollow);
 
-    void unfollowUser(Jwt jwt, UUID userIdToUnfollow);
+    void unfollowUser(String id, String userIdToUnfollow);
 
-    FollowCheckResponseDto checkUserFollow(Jwt jwt, UUID userIdToCheck);
+    FollowCheckResponse checkUserFollow(String id, String userIdToCheck);
 
-    Page<UserResponseDto> getFollowing(UUID userId, Pageable pageable);
+    Page<UserResponse> getFollowing(String userId, Pageable pageable);
 
-    Page<UserResponseDto> getFollowers(UUID userId, Pageable pageable);
+    Page<UserResponse> getFollowers(String userId, Pageable pageable);
 
 
 }

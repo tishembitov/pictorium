@@ -1,31 +1,23 @@
 package ru.tishembitov.pictorium.user;
 
 import jakarta.validation.Valid;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.UUID;
 
 public interface UserService {
 
-    UserResponseDto getCurrentUser(Jwt jwt);
+    UserResponse getUserById(String id);
 
-    UserResponseDto getUserById(UUID id);
+    UserResponse getUserByUsername(String username);
 
-    UserResponseDto getUserByUsername(String username);
+    UserResponse updateUser(String id, @Valid UserUpdateRequest userUpdateRequest);
 
-    UserResponseDto updateUser(Jwt jwt, @Valid UserUpdateDto userUpdateDto);
+    UserResponse uploadBannerImage(String id, MultipartFile file);
 
-    UserResponseDto uploadBannerImage(Jwt jwt, MultipartFile file);
+    UserResponse uploadProfileImage(String id, MultipartFile file);
 
-    UserResponseDto uploadProfileImage(Jwt jwt, MultipartFile file);
+    User getUserByIdOrThrow(String id);
 
-    User getUserOrThrow(Jwt jwt);
-
-    User getUserByIdOrThrow(UUID id);
-
-    UUID getCurrentUserId(Jwt jwt);
-
-    void validateUserExists(UUID userId);
+    void validateUserExists(String userId);
 
 }

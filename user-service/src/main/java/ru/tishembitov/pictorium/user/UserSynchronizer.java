@@ -16,41 +16,20 @@ public class UserSynchronizer {
     private final UserRepository userRepository;
 
     @Transactional
-    public User createUserFromToken(Jwt jwt) {
+    public void createUserFromToken(Jwt jwt) {
         String email = jwt.getClaimAsString("email");
-        String username = generateUniqueUsername(email);
-        String keycloakId = jwt.getSubject();
+        String username = jwt.getClaimAsString("username");
+        String id = jwt.getSubject();
 
-        log.info("Creating new user from token: keycloakId={}", keycloakId);
+        log.info("Creating new user from token: id={}", id);
 
         User newUser = User.builder()
-                .keycloakId(keycloakId)
+                .id(id)
                 .email(email)
                 .username(username)
                 .createdAt(Instant.now())
                 .build();
 
-        return userRepository.save(newUser);
-    }
-
-
-    private String generateUniqueUsername(String email) {
-        String baseUsername = email.substring(0, email.indexOf('@'));
-
-        if (baseUsername.contains("+")) {
-            baseUsername = baseUsername.substring(0, baseUsername.indexOf('+'));
-        }
-
-        baseUsername = baseUsername.replaceAll("[^a-zA-Z0-9._-]", "_");
-
-        String username = baseUsername;
-        int counter = 1;
-
-        while (userRepository.existsByUsername(username)) {
-            username = baseUsername + counter;
-            counter++;
-        }
-
-        return username;
+        userRepository.save(newUser);
     }
 }

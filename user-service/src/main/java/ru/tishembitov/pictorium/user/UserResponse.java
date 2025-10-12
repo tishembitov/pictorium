@@ -4,8 +4,7 @@ import java.util.UUID;
 
 public record UserResponse(
 
-     UUID id,
-     String keycloakId,
+     String id,
      String username,
      String email,
      String image,

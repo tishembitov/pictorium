@@ -20,11 +20,8 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
     @Column(unique = true, nullable = false)
-    private String keycloakId;
+    private String id;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -37,12 +34,6 @@ public class User {
     private String bannerImage;
 
     private String description;
-
-//    private String chatColor = "blue";
-//
-//    private Integer chatSize = 384;
-//
-//    private Boolean sideOpen = true;
 
     private UUID selectedBoardId;
 
