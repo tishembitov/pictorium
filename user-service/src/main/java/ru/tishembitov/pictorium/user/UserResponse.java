@@ -2,7 +2,7 @@ package ru.tishembitov.pictorium.user;
 
 import java.util.UUID;
 
-public record UserResponseDto(
+public record UserResponse(
 
      UUID id,
      String keycloakId,
