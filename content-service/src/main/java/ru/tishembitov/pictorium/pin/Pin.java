@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import ru.tishembitov.pictorium.comment.Comment;
 import ru.tishembitov.pictorium.like.Like;
+import ru.tishembitov.pictorium.savedPins.SavedPin;
 import ru.tishembitov.pictorium.tag.Tag;
 
 import java.time.Instant;
@@ -69,15 +70,15 @@ public class Pin {
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
-    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(nullable = false)
     @Builder.Default
-    private Set<Comment> comments = new HashSet<>();
+    private Integer likeCount = 0;
 
-    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(nullable = false)
     @Builder.Default
-    private Set<Like> likes = new HashSet<>();
+    private Integer commentCount = 0;
 
-    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(nullable = false)
     @Builder.Default
-    private Set<SavedPin> savedByUsers = new HashSet<>();
+    private Integer saveCount = 0;
 }
