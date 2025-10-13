@@ -30,7 +30,7 @@ public class Like {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private UUID userId;
 
     @ManyToOne(fetch = FetchType.LAZY)

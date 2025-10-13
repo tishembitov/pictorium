@@ -31,7 +31,7 @@ public class Comment {
     @JoinColumn(name = "pin_id")
     private Pin pin;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private UUID userId;
 
     @ManyToOne(fetch = FetchType.LAZY)

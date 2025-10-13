@@ -28,7 +28,7 @@ public class Pin {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private UUID authorId;
 
     @Column(length = 200)
@@ -76,4 +76,8 @@ public class Pin {
     @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Like> likes = new HashSet<>();
+
+    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<SavedPin> savedByUsers = new HashSet<>();
 }
