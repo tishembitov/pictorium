@@ -8,7 +8,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import ru.tishembitov.pictorium.user.UserResponse;
 
@@ -23,28 +24,28 @@ public class SubscriptionController {
 
     @PostMapping("/{userIdToFollow}")
     public ResponseEntity<SubscriptionResponse> followUser(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String userIdToFollow) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(subscriptionService.followUser(authentication.getName(), userIdToFollow));
+                .body(subscriptionService.followUser(jwt.getSubject(), userIdToFollow));
     }
 
     @DeleteMapping("/{userIdToUnfollow}")
     public ResponseEntity<Void> unfollowUser(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String userIdToUnfollow) {
 
-        subscriptionService.unfollowUser(authentication.getName(), userIdToUnfollow);
+        subscriptionService.unfollowUser(jwt.getSubject(), userIdToUnfollow);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/check_user_follow/{userIdToCheck}")
     public ResponseEntity<FollowCheckResponse> checkUserFollow(
-             Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String userIdToCheck) {
 
-        return ResponseEntity.ok(subscriptionService.checkUserFollow(authentication.getName(), userIdToCheck));
+        return ResponseEntity.ok(subscriptionService.checkUserFollow(jwt.getSubject(), userIdToCheck));
     }
 
     @GetMapping("/followers/{id}")

@@ -8,7 +8,8 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.tishembitov.pictorium.file.FileStorageService;
@@ -25,8 +26,8 @@ public class UserController {
     private final FileStorageService fileStorageService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
-        return ResponseEntity.ok(userService.getUserById(authentication.getName()));
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(userService.getUserById(jwt.getSubject()));
     }
 
     @GetMapping("/user_id/{id}")
@@ -41,18 +42,18 @@ public class UserController {
 
     @PatchMapping(value = "/information")
     public ResponseEntity<UserResponse> updateUser(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UserUpdateRequest userUpdateRequest) {
 
-        return ResponseEntity.ok(userService.updateUser(authentication.getName(), userUpdateRequest));
+        return ResponseEntity.ok(userService.updateUser(jwt.getSubject(), userUpdateRequest));
     }
 
     @PostMapping("/upload")
     public ResponseEntity<UserResponse> uploadProfileImage(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(userService.uploadProfileImage(authentication.getName(), file));
+        return ResponseEntity.ok(userService.uploadProfileImage(jwt.getSubject(), file));
     }
 
     @GetMapping("/upload/{id}")
@@ -79,10 +80,10 @@ public class UserController {
 
     @PostMapping("/banner/upload")
     public ResponseEntity<UserResponse> uploadBannerImage(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam("file") MultipartFile file) {
 
-        return ResponseEntity.ok(userService.uploadBannerImage(authentication.getName(), file));
+        return ResponseEntity.ok(userService.uploadBannerImage(jwt.getSubject(), file));
     }
 
     @GetMapping("/banner/upload/{id}")
