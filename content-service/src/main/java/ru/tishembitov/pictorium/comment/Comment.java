@@ -46,6 +46,10 @@ public class Comment {
     @Builder.Default
     private Set<Like> likes = new HashSet<>();
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer likeCount = 0;
+
     @Column(length = 400)
     private String content;
 

@@ -70,6 +70,18 @@ public class Pin {
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
+    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Comment> comments = new HashSet<>();
+
+    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Like> likes = new HashSet<>();
+
+    @OneToMany(mappedBy = "pin", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<SavedPin> savedByUsers = new HashSet<>();
+
     @Column(nullable = false)
     @Builder.Default
     private Integer likeCount = 0;
