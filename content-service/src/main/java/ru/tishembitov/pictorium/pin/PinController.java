@@ -6,8 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -34,11 +32,9 @@ public class PinController {
     }
 
     @PostMapping
-    public ResponseEntity<PinResponse> create(
-            @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody PinCreateRequest request) {
+    public ResponseEntity<PinResponse> create(@Valid @RequestBody PinCreateRequest request) {
 
-        PinResponse pin = pinService.createPin(jwt.getSubject(), request);
+        PinResponse pin = pinService.createPin(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(pin);
     }
 
