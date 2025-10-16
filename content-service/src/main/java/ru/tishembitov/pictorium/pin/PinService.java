@@ -11,7 +11,7 @@ public interface PinService {
 
     Page<PinResponse> findPins(PinFilter filter, Pageable pageable);
 
-    PinResponse createPin(String userId, PinCreateRequest request);
+    PinResponse createPin(PinCreateRequest request);
 
     PinResponse updatePin(UUID id, PinUpdateRequest request);
 
