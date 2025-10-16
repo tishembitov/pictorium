@@ -27,7 +27,7 @@ public class Board {
     private UUID id;
 
     @Column(nullable = false)
-    private UUID userId;
+    private String userId;
 
     @Column(nullable = false, length = 200)
     private String title;

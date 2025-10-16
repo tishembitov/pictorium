@@ -31,7 +31,7 @@ public class Like {
     private UUID id;
 
     @Column(nullable = false)
-    private UUID userId;
+    private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pin_id")

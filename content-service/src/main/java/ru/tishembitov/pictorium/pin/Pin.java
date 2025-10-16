@@ -30,7 +30,7 @@ public class Pin {
     private UUID id;
 
     @Column(nullable = false)
-    private UUID authorId;
+    private String authorId;
 
     @Column(length = 200)
     private String title;

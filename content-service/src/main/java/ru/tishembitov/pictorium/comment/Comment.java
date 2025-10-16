@@ -32,7 +32,7 @@ public class Comment {
     private Pin pin;
 
     @Column(nullable = false)
-    private UUID userId;
+    private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id")

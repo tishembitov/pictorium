@@ -1,9 +1,10 @@
-package ru.tishembitov.pictorium.pin;
+package ru.tishembitov.pictorium.savedPins;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import ru.tishembitov.pictorium.pin.Pin;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -28,7 +29,7 @@ public class SavedPin {
     private UUID id;
 
     @Column(nullable = false)
-    private UUID userId;
+    private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pin_id", nullable = false)
