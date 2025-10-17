@@ -8,15 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.exception.AccessDeniedException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
-import ru.tishembitov.pictorium.like.LikeRepository;
-import ru.tishembitov.pictorium.savedPins.SavedPinRepository;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,47 +21,52 @@ import java.util.stream.Collectors;
 public class PinServiceImpl implements PinService {
 
     private final PinRepository pinRepository;
+    private final PinInteractionRepository pinInteractionRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
-    private final LikeRepository likeRepository;
-    private final SavedPinRepository savedPinRepository;
     private final SecurityUtils securityUtils;
 
     @Override
     public PinResponse getPinById(UUID id) {
-        Pin pin = pinRepository.findById(id)
+        Pin pin = pinRepository.findByIdWithTags(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + id + " not found"));
 
-        PinUserInteraction interaction = getPinUserInteraction(id);
+        PinInteractionDto interaction = getPinInteractionDto(id);
 
         return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
     }
 
     @Override
     public Page<PinResponse> findPins(PinFilter filter, Pageable pageable) {
-        normalizeScope(filter);
+        filter = normalizeScope(filter);
 
         Specification<Pin> spec = PinSpecifications.build(filter);
-        Page<Pin> pins = pinRepository.findAll(spec, pageable);
 
-        if (pins.isEmpty()) {
+        Page<UUID> pinIds = pinRepository.findAll(spec, pageable)
+                .map(Pin::getId);
+
+        if (pinIds.isEmpty()) {
             return Page.empty(pageable);
         }
 
-        Set<UUID> pinIds = pins.getContent().stream()
-                .map(Pin::getId)
-                .collect(Collectors.toSet());
+        List<Pin> pins = pinRepository.findAllByIdWithTags(pinIds.getContent());
 
-        Map<UUID, PinUserInteraction> interactions = getPinUserInteractionsBatch(pinIds);
+        Map<UUID, PinInteractionDto> interactions =
+                getPinInteractionDtosBatch(new HashSet<>(pinIds.getContent()));
 
-        return pins.map(pin -> {
-            PinUserInteraction interaction = interactions.getOrDefault(
-                    pin.getId(),
-                    PinUserInteraction.empty()
+        Map<UUID, Pin> pinMap = pins.stream()
+                .collect(Collectors.toMap(Pin::getId, pin -> pin));
+
+        return pinIds.map(id -> {
+            Pin pin = pinMap.get(id);
+            PinInteractionDto interaction = interactions.getOrDefault(
+                    id,
+                    PinInteractionDto.empty()
             );
             return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
         });
     }
+
     @Override
     @Transactional
     public PinResponse createPin(PinCreateRequest request) {
@@ -85,8 +86,9 @@ public class PinServiceImpl implements PinService {
     @Override
     @Transactional
     public PinResponse updatePin(UUID id, PinUpdateRequest request) {
-        Pin pin = pinRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + id + " not found"));
+        Pin pin = pinRepository.findByIdWithTags(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Pin with id " + id + " not found"));
 
         String currentUserId = securityUtils.requireCurrentUserId();
         checkPinOwnership(pin, currentUserId);
@@ -94,7 +96,7 @@ public class PinServiceImpl implements PinService {
         pinMapper.updateEntity(pin, request);
         pin = pinRepository.save(pin);
 
-        PinUserInteraction interaction = getPinUserInteraction(id);
+        PinInteractionDto interaction = getPinInteractionDto(id);
 
         return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
     }
@@ -104,51 +106,56 @@ public class PinServiceImpl implements PinService {
     public void deletePin(UUID id) {
         Pin pin = pinRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + id + " not found"));
-        String currentUserId = securityUtils.requireCurrentUserId();
 
+        String currentUserId = securityUtils.requireCurrentUserId();
         checkPinOwnership(pin, currentUserId);
+
         pinRepository.delete(pin);
     }
 
-    private PinUserInteraction getPinUserInteraction(UUID pinId) {
+
+    private PinInteractionDto getPinInteractionDto(UUID pinId) {
         return securityUtils.getCurrentUserId()
-                .map(userId -> calculateUserInteraction(userId, pinId))
-                .orElseGet(PinUserInteraction::empty);
+                .map(userId -> {
+                    Map<UUID, PinInteractionDto> interactions =
+                            calculateUserInteractionsBatch(userId, Set.of(pinId));
+                    return interactions.getOrDefault(pinId, PinInteractionDto.empty());
+                })
+                .orElseGet(PinInteractionDto::empty);
     }
 
-    private PinUserInteraction calculateUserInteraction(String userId, UUID pinId) {
-        boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pinId);
-        boolean isSaved = savedPinRepository.existsByUserIdAndPinId(userId, pinId);
-        return new PinUserInteraction(isLiked, isSaved);
-    }
-
-    private Map<UUID, PinUserInteraction> getPinUserInteractionsBatch(Set<UUID> pinIds) {
+    private Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds) {
         return securityUtils.getCurrentUserId()
                 .map(userId -> calculateUserInteractionsBatch(userId, pinIds))
                 .orElseGet(() -> createEmptyInteractions(pinIds));
     }
 
-    private Map<UUID, PinUserInteraction> calculateUserInteractionsBatch(String userId, Set<UUID> pinIds) {
-        Set<UUID> likedPinIds = likeRepository.findPinIdsByUserIdAndPinIdIn(userId, pinIds);
-        Set<UUID> savedPinIds = savedPinRepository.findPinIdsByUserIdAndPinIdIn(userId, pinIds);
+    private Map<UUID, PinInteractionDto> calculateUserInteractionsBatch(String userId, Set<UUID> pinIds) {
+        if (pinIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
 
+        List<PinInteractionProjection> projections =
+                pinInteractionRepository.findInteractions(userId, pinIds);
+
+        Map<UUID, PinInteractionDto> result = new HashMap<>();
+        pinIds.forEach(id -> result.put(id, PinInteractionDto.empty()));
+
+        projections.forEach(proj ->
+                result.put(proj.pinId(), new PinInteractionDto(proj.isLiked(), proj.isSaved()))
+        );
+
+        return result;
+    }
+
+    private Map<UUID, PinInteractionDto> createEmptyInteractions(Set<UUID> pinIds) {
         return pinIds.stream()
                 .collect(Collectors.toMap(
                         pinId -> pinId,
-                        pinId -> new PinUserInteraction(
-                                likedPinIds.contains(pinId),
-                                savedPinIds.contains(pinId)
-                        )
+                        pinId -> PinInteractionDto.empty()
                 ));
     }
 
-    private Map<UUID, PinUserInteraction> createEmptyInteractions(Set<UUID> pinIds) {
-        return pinIds.stream()
-                .collect(Collectors.toMap(
-                        pinId -> pinId,
-                        pinId -> PinUserInteraction.empty()
-                ));
-    }
 
     private void checkPinOwnership(Pin pin, String userId) {
         if (!pin.getAuthorId().equals(userId)) {
@@ -156,48 +163,48 @@ public class PinServiceImpl implements PinService {
         }
     }
 
-    record PinUserInteraction(boolean isLiked, boolean isSaved) {
-        static PinUserInteraction empty() {
-            return new PinUserInteraction(false, false);
-        }
-    }
-
-    private void normalizeScope(PinFilter filter) {
-        if (filter == null || filter.scope() == null) {
-            return;
+    private PinFilter normalizeScope(PinFilter filter) {
+        if (filter == null || filter.scope() == null || filter.scope() == Scope.ALL) {
+            return filter;
         }
 
-        switch (filter.scope()) {
+        return switch (filter.scope()) {
             case CREATED -> filter
-                    .withAuthorId(filter.authorId() != null ? filter.authorId() : securityUtils.requireCurrentUserId())
+                    .withAuthorId(filter.authorId() != null
+                            ? filter.authorId()
+                            : securityUtils.requireCurrentUserId())
                     .withSavedBy(null)
                     .withLikedBy(null)
                     .withRelatedTo(null);
 
             case SAVED -> filter
                     .withAuthorId(null)
-                    .withSavedBy(filter.savedBy() != null ? filter.savedBy() : securityUtils.requireCurrentUserId())
+                    .withSavedBy(filter.savedBy() != null
+                            ? filter.savedBy()
+                            : securityUtils.requireCurrentUserId())
                     .withLikedBy(null)
                     .withRelatedTo(null);
 
             case LIKED -> filter
                     .withAuthorId(null)
                     .withSavedBy(null)
-                    .withLikedBy(filter.likedBy() != null ? filter.likedBy() : securityUtils.requireCurrentUserId())
+                    .withLikedBy(filter.likedBy() != null
+                            ? filter.likedBy()
+                            : securityUtils.requireCurrentUserId())
                     .withRelatedTo(null);
 
             case RELATED -> {
                 if (filter.relatedTo() == null) {
-                    throw new IllegalArgumentException("relatedTo parameter is required for RELATED scope");
+                    throw new IllegalArgumentException(
+                            "relatedTo parameter is required for RELATED scope"
+                    );
                 }
-                filter
+                yield filter
                         .withAuthorId(null)
                         .withSavedBy(null)
                         .withLikedBy(null);
             }
-
-            case ALL -> {
-            }
-        }
+            default -> filter;
+        };
     }
 }
