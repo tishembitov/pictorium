@@ -19,7 +19,7 @@ public class PinController {
 
     @GetMapping
     public ResponseEntity<Page<PinResponse>> getPins(
-            PinFilter filter,
+            @ModelAttribute @Valid PinFilter filter,
             Pageable pageable
     ) {
         Page<PinResponse> page = pinService.findPins(filter, pageable);
@@ -33,9 +33,7 @@ public class PinController {
 
     @PostMapping
     public ResponseEntity<PinResponse> create(@Valid @RequestBody PinCreateRequest request) {
-
-        PinResponse pin = pinService.createPin(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(pin);
+        return ResponseEntity.status(HttpStatus.CREATED).body(pinService.createPin(request));
     }
 
     @PatchMapping("/{id}")
