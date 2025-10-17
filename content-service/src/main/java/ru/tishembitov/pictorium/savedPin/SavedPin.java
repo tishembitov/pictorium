@@ -1,4 +1,4 @@
-package ru.tishembitov.pictorium.savedPins;
+package ru.tishembitov.pictorium.savedPin;
 
 import jakarta.persistence.*;
 import lombok.*;
