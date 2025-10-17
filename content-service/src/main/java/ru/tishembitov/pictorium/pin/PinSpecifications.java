@@ -25,6 +25,7 @@ public class PinSpecifications {
         }
 
         var specs = Stream.of(
+                        fetchTags(),
                         byTextSearch(filter.q()),
                         byTags(filter.tags()),
                         byAuthor(filter.authorId()),
@@ -43,7 +44,9 @@ public class PinSpecifications {
 
     private static Specification<Pin> byTextSearch(String query) {
         return (root, criteriaQuery, cb) -> {
-            if (query == null || query.isBlank()) cb.conjunction();
+            if (query == null || query.isBlank()) {
+                return cb.conjunction();
+            }
             String searchPattern = "%" + query.toLowerCase() + "%";
             var titleLike = cb.like(cb.lower(root.get("title")), searchPattern);
             var descLike = cb.like(cb.lower(root.get("description")), searchPattern);
@@ -66,9 +69,18 @@ public class PinSpecifications {
         };
     }
 
+    private static Specification<Pin> fetchTags() {
+        return (root, query, cb) -> {
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                root.fetch("tags", JoinType.LEFT);
+            }
+            return cb.conjunction();
+        };
+    }
+
     private static Specification<Pin> byAuthor(String authorId) {
         return (root, query, cb) -> {
-            if (authorId == null) cb.conjunction();
+            if (authorId == null) return cb.conjunction();
             return cb.equal(root.get("authorId"), authorId);
         };
     }
@@ -91,14 +103,14 @@ public class PinSpecifications {
 
     private static Specification<Pin> byCreatedFrom(Instant createdFrom) {
         return (root, query, cb) -> {
-            if (createdFrom == null) cb.conjunction();
+            if (createdFrom == null) return cb.conjunction();
             return cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom);
         };
     }
 
     private static Specification<Pin> byCreatedTo(Instant createdTo) {
         return (root, query, cb) -> {
-            if (createdTo == null) cb.conjunction();
+            if (createdTo == null) return cb.conjunction();
             return cb.lessThanOrEqualTo(root.get("createdAt"), createdTo);
         };
     }
