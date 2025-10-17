@@ -1,16 +1,16 @@
 package ru.tishembitov.pictorium.util;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.stereotype.Component;
 import ru.tishembitov.pictorium.exception.UnauthorizedException;
 
 import java.util.*;
 
-@Component
+@UtilityClass
 @Slf4j
 public class SecurityUtils {
 
