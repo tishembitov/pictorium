@@ -2,8 +2,8 @@ package ru.tishembitov.pictorium.pin;
 
 import java.util.UUID;
 
-public record PinInteractionProjection(
-        UUID pinId,
-        Boolean isLiked,
-        Boolean isSaved
-) {}
+public interface PinInteractionProjection{
+        UUID getId();
+        boolean isLiked();
+        boolean isSaved();
+}
