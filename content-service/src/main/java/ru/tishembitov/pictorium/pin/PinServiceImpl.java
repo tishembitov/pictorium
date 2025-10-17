@@ -107,7 +107,7 @@ public class PinServiceImpl implements PinService {
         String currentUserId = securityUtils.requireCurrentUserId();
 
         checkPinOwnership(pin, currentUserId);
-        pinRepository.deleteById(id);
+        pinRepository.delete(pin);
     }
 
     private PinUserInteraction getPinUserInteraction(UUID pinId) {
