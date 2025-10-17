@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record PinResponse (
      UUID id,
-     UUID userId,
+     String userId,
      String title,
      String description,
      String href,
