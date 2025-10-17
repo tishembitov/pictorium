@@ -24,7 +24,6 @@ public class PinServiceImpl implements PinService {
     private final PinInteractionRepository pinInteractionRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
-    private final SecurityUtils securityUtils;
 
     @Override
     public PinResponse getPinById(UUID id) {
@@ -70,7 +69,7 @@ public class PinServiceImpl implements PinService {
     @Override
     @Transactional
     public PinResponse createPin(PinCreateRequest request) {
-        String currentUserId = securityUtils.requireCurrentUserId();
+        String currentUserId = SecurityUtils.requireCurrentUserId();
         Pin pin = pinMapper.toEntity(currentUserId, request);
 
         if (request.tags() != null && !request.tags().isEmpty()) {
@@ -90,7 +89,7 @@ public class PinServiceImpl implements PinService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Pin with id " + id + " not found"));
 
-        String currentUserId = securityUtils.requireCurrentUserId();
+        String currentUserId = SecurityUtils.requireCurrentUserId();
         checkPinOwnership(pin, currentUserId);
 
         pinMapper.updateEntity(pin, request);
@@ -107,7 +106,7 @@ public class PinServiceImpl implements PinService {
         Pin pin = pinRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + id + " not found"));
 
-        String currentUserId = securityUtils.requireCurrentUserId();
+        String currentUserId = SecurityUtils.requireCurrentUserId();
         checkPinOwnership(pin, currentUserId);
 
         pinRepository.delete(pin);
@@ -115,7 +114,7 @@ public class PinServiceImpl implements PinService {
 
 
     private PinInteractionDto getPinInteractionDto(UUID pinId) {
-        return securityUtils.getCurrentUserId()
+        return SecurityUtils.getCurrentUserId()
                 .map(userId -> {
                     Map<UUID, PinInteractionDto> interactions =
                             calculateUserInteractionsBatch(userId, Set.of(pinId));
@@ -125,7 +124,7 @@ public class PinServiceImpl implements PinService {
     }
 
     private Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds) {
-        return securityUtils.getCurrentUserId()
+        return SecurityUtils.getCurrentUserId()
                 .map(userId -> calculateUserInteractionsBatch(userId, pinIds))
                 .orElseGet(() -> createEmptyInteractions(pinIds));
     }
@@ -142,7 +141,7 @@ public class PinServiceImpl implements PinService {
         pinIds.forEach(id -> result.put(id, PinInteractionDto.empty()));
 
         projections.forEach(proj ->
-                result.put(proj.pinId(), new PinInteractionDto(proj.isLiked(), proj.isSaved()))
+                result.put(proj.getId(), new PinInteractionDto(proj.isLiked(), proj.isSaved()))
         );
 
         return result;
@@ -172,7 +171,7 @@ public class PinServiceImpl implements PinService {
             case CREATED -> filter
                     .withAuthorId(filter.authorId() != null
                             ? filter.authorId()
-                            : securityUtils.requireCurrentUserId())
+                            : SecurityUtils.requireCurrentUserId())
                     .withSavedBy(null)
                     .withLikedBy(null)
                     .withRelatedTo(null);
@@ -181,7 +180,7 @@ public class PinServiceImpl implements PinService {
                     .withAuthorId(null)
                     .withSavedBy(filter.savedBy() != null
                             ? filter.savedBy()
-                            : securityUtils.requireCurrentUserId())
+                            : SecurityUtils.requireCurrentUserId())
                     .withLikedBy(null)
                     .withRelatedTo(null);
 
@@ -190,7 +189,7 @@ public class PinServiceImpl implements PinService {
                     .withSavedBy(null)
                     .withLikedBy(filter.likedBy() != null
                             ? filter.likedBy()
-                            : securityUtils.requireCurrentUserId())
+                            : SecurityUtils.requireCurrentUserId())
                     .withRelatedTo(null);
 
             case RELATED -> {
