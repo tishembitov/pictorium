@@ -1,6 +1,7 @@
 package ru.tishembitov.pictorium.pin;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,12 +17,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PinServiceImpl implements PinService {
 
     private final PinRepository pinRepository;
-    private final PinInteractionRepository pinInteractionRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
 
@@ -135,7 +136,7 @@ public class PinServiceImpl implements PinService {
         }
 
         List<PinInteractionProjection> projections =
-                pinInteractionRepository.findInteractions(userId, pinIds);
+                pinRepository.findUserInteractions(userId, pinIds);
 
         Map<UUID, PinInteractionDto> result = new HashMap<>();
         pinIds.forEach(id -> result.put(id, PinInteractionDto.empty()));
