@@ -6,47 +6,67 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import ru.tishembitov.pictorium.like.Like;
-import ru.tishembitov.pictorium.savedPins.SavedPin;
+import ru.tishembitov.pictorium.savedPin.SavedPin;
 import ru.tishembitov.pictorium.tag.Tag;
 
 import java.time.Instant;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class PinSpecifications {
+
 
     public static Specification<Pin> build(PinFilter filter) {
         if (filter == null) {
             return null;
         }
 
-        var specs = Stream.of(
-                        fetchTags(),
-                        byTextSearch(filter.q()),
-                        byTags(filter.tags()),
-                        byAuthor(filter.authorId()),
-                        bySavedBy(filter.savedBy()),
-                        byLikedBy(filter.likedBy()),
-                        byCreatedFrom(filter.createdFrom()),
-                        byCreatedTo(filter.createdTo()),
-                        byRelatedTo(filter.relatedTo()),
-                        needsDistinct(filter) ? distinct() : null
-                )
-                .filter(Objects::nonNull)
-                .toList();
+        List<Specification<Pin>> specs = new ArrayList<>();
 
-        return specs.isEmpty() ? null : Specification.allOf(specs);
+        specs.add(fetchTags());
+
+        if (filter.q() != null && !filter.q().isBlank()) {
+            specs.add(byTextSearch(filter.q()));
+        }
+
+        if (filter.tags() != null && !filter.tags().isEmpty()) {
+            specs.add(byTags(filter.tags()));
+        }
+
+        if (filter.authorId() != null) {
+            specs.add(byAuthor(filter.authorId()));
+        }
+
+        if (filter.savedBy() != null) {
+            specs.add(bySavedBy(filter.savedBy()));
+        }
+
+        if (filter.likedBy() != null) {
+            specs.add(byLikedBy(filter.likedBy()));
+        }
+
+        if (filter.createdFrom() != null) {
+            specs.add(byCreatedFrom(filter.createdFrom()));
+        }
+
+        if (filter.createdTo() != null) {
+            specs.add(byCreatedTo(filter.createdTo()));
+        }
+
+        if (filter.relatedTo() != null) {
+            specs.add(byRelatedTo(filter.relatedTo()));
+        }
+
+        if (needsDistinct(filter)) {
+            specs.add(distinct());
+        }
+
+        return Specification.allOf(specs);
     }
 
-    private static Specification<Pin> byTextSearch(String query) {
+
+    public static Specification<Pin> byTextSearch(String query) {
         return (root, criteriaQuery, cb) -> {
-            if (query == null || query.isBlank()) {
-                return cb.conjunction();
-            }
             String searchPattern = "%" + query.toLowerCase() + "%";
             var titleLike = cb.like(cb.lower(root.get("title")), searchPattern);
             var descLike = cb.like(cb.lower(root.get("description")), searchPattern);
@@ -54,14 +74,17 @@ public class PinSpecifications {
         };
     }
 
+
     public static Specification<Pin> byTags(Set<String> tags) {
         return (root, query, cb) -> {
-            if (tags == null || tags.isEmpty()) return cb.conjunction();
-            var lower = tags.stream()
+            Set<String> lower = tags.stream()
                     .filter(Objects::nonNull)
                     .map(s -> s.toLowerCase(Locale.ROOT))
                     .collect(Collectors.toSet());
-            if (lower.isEmpty()) return cb.conjunction();
+
+            if (lower.isEmpty()) {
+                return cb.conjunction();
+            }
 
             Join<Pin, Tag> tagJoin = root.join("tags", JoinType.INNER);
             query.distinct(true);
@@ -69,7 +92,8 @@ public class PinSpecifications {
         };
     }
 
-    private static Specification<Pin> fetchTags() {
+
+    public static Specification<Pin> fetchTags() {
         return (root, query, cb) -> {
             if (query.getResultType() != Long.class && query.getResultType() != long.class) {
                 root.fetch("tags", JoinType.LEFT);
@@ -78,46 +102,39 @@ public class PinSpecifications {
         };
     }
 
-    private static Specification<Pin> byAuthor(String authorId) {
-        return (root, query, cb) -> {
-            if (authorId == null) return cb.conjunction();
-            return cb.equal(root.get("authorId"), authorId);
-        };
+
+    public static Specification<Pin> byAuthor(String authorId) {
+        return (root, query, cb) -> cb.equal(root.get("authorId"), authorId);
     }
+
 
     public static Specification<Pin> bySavedBy(String userId) {
         return (root, query, cb) -> {
-            if (userId == null) return cb.conjunction();
             Join<Pin, SavedPin> saves = root.join("savedByUsers", JoinType.INNER);
             return cb.equal(saves.get("userId"), userId);
         };
     }
 
+
     public static Specification<Pin> byLikedBy(String userId) {
         return (root, query, cb) -> {
-            if (userId == null) return cb.conjunction();
             Join<Pin, Like> likes = root.join("likes", JoinType.INNER);
             return cb.equal(likes.get("userId"), userId);
         };
     }
 
-    private static Specification<Pin> byCreatedFrom(Instant createdFrom) {
-        return (root, query, cb) -> {
-            if (createdFrom == null) return cb.conjunction();
-            return cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom);
-        };
+
+    public static Specification<Pin> byCreatedFrom(Instant createdFrom) {
+        return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom);
     }
 
-    private static Specification<Pin> byCreatedTo(Instant createdTo) {
-        return (root, query, cb) -> {
-            if (createdTo == null) return cb.conjunction();
-            return cb.lessThanOrEqualTo(root.get("createdAt"), createdTo);
-        };
+
+    public static Specification<Pin> byCreatedTo(Instant createdTo) {
+        return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdTo);
     }
 
     public static Specification<Pin> byRelatedTo(UUID pinId) {
         return (root, query, cb) -> {
-            if (pinId == null) return cb.conjunction();
             query.distinct(true);
 
             Subquery<Tag> sq = query.subquery(Tag.class);
@@ -131,18 +148,21 @@ public class PinSpecifications {
                             cb.equal(tSource.get("id"), tCandidate.get("id"))
                     );
 
-            return cb.and(cb.notEqual(root.get("id"), pinId), cb.exists(sq));
+            return cb.and(
+                    cb.notEqual(root.get("id"), pinId),
+                    cb.exists(sq)
+            );
         };
     }
 
-    private static Specification<Pin> distinct() {
+    public static Specification<Pin> distinct() {
         return (root, query, cb) -> {
             query.distinct(true);
             return cb.conjunction();
         };
     }
 
-    private static boolean needsDistinct(PinFilter filter) {
+    public static boolean needsDistinct(PinFilter filter) {
         return filter.tags() != null ||
                 filter.relatedTo() != null ||
                 filter.savedBy() != null ||
