@@ -107,22 +107,35 @@ public class PinSpecifications {
         return (root, query, cb) -> cb.equal(root.get("authorId"), authorId);
     }
 
-
     public static Specification<Pin> bySavedBy(String userId) {
         return (root, query, cb) -> {
-            Join<Pin, SavedPin> saves = root.join("savedByUsers", JoinType.INNER);
-            return cb.equal(saves.get("userId"), userId);
+            Subquery<SavedPin> subquery = query.subquery(SavedPin.class);
+            Root<SavedPin> savedPinRoot = subquery.from(SavedPin.class);
+
+            subquery.select(savedPinRoot)
+                    .where(
+                            cb.equal(savedPinRoot.get("pin"), root),
+                            cb.equal(savedPinRoot.get("userId"), userId)
+                    );
+
+            return cb.exists(subquery);
         };
     }
-
 
     public static Specification<Pin> byLikedBy(String userId) {
         return (root, query, cb) -> {
-            Join<Pin, Like> likes = root.join("likes", JoinType.INNER);
-            return cb.equal(likes.get("userId"), userId);
+            Subquery<Like> subquery = query.subquery(Like.class);
+            Root<Like> likeRoot = subquery.from(Like.class);
+
+            subquery.select(likeRoot)
+                    .where(
+                            cb.equal(likeRoot.get("pin"), root),
+                            cb.equal(likeRoot.get("userId"), userId)
+                    );
+
+            return cb.exists(subquery);
         };
     }
-
 
     public static Specification<Pin> byCreatedFrom(Instant createdFrom) {
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom);
@@ -163,9 +176,6 @@ public class PinSpecifications {
     }
 
     public static boolean needsDistinct(PinFilter filter) {
-        return filter.tags() != null ||
-                filter.relatedTo() != null ||
-                filter.savedBy() != null ||
-                filter.likedBy() != null;
+        return filter.tags() != null || filter.relatedTo() != null;
     }
 }
