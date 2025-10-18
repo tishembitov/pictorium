@@ -30,8 +30,9 @@ public class LikeServiceImpl implements LikeService {
         Pin pin = pinRepository.findById(pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + pinId + " not found"));
 
+        boolean isSaved = savedPinRepository.existsByUserIdAndPinId(userId, pinId);
+
         if (likeRepository.existsByUserIdAndPinId(userId, pinId)) {
-            boolean isSaved = savedPinRepository.existsByUserIdAndPinId(userId, pinId);
             return pinMapper.toResponse(pin, true, isSaved);
         }
 
@@ -43,7 +44,6 @@ public class LikeServiceImpl implements LikeService {
         likeRepository.save(like);
         pinRepository.incrementLikeCount(pinId);
 
-        boolean isSaved = savedPinRepository.existsByUserIdAndPinId(userId, pinId);
         return pinMapper.toResponse(pin, true, isSaved);
     }
 
