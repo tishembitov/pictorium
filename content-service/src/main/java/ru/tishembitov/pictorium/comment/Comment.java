@@ -50,6 +50,10 @@ public class Comment {
     @Builder.Default
     private Integer likeCount = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer replyCount = 0;
+
     @Column(length = 400)
     private String content;
 
