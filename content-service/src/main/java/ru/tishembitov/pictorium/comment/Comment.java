@@ -57,8 +57,8 @@ public class Comment {
     @Column(length = 400)
     private String content;
 
-    @Column(length = 200)
-    private String image;
+    @Column(length = 500)
+    private String imageUrl;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
