@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class PinSpecifications {
 
 
-    public static Specification<Pin> build(PinFilter filter) {
+    public static Specification<Pin> withFilter(PinFilter filter) {
         if (filter == null) {
             return null;
         }

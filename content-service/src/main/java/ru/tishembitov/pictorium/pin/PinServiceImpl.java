@@ -40,7 +40,7 @@ public class PinServiceImpl implements PinService {
     public Page<PinResponse> findPins(PinFilter filter, Pageable pageable) {
         filter = normalizeScope(filter);
 
-        Specification<Pin> spec = PinSpecifications.build(filter);
+        Specification<Pin> spec = PinSpecifications.withFilter(filter);
 
         Page<UUID> pinIds = pinRepository.findAll(spec, pageable)
                 .map(Pin::getId);
