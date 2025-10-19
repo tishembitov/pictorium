@@ -8,19 +8,19 @@ import ru.tishembitov.pictorium.pin.PinResponse;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/pins")
+@RequestMapping("/api/v1/pins/{pinId}/saves")
 @RequiredArgsConstructor
 public class SavedPinController {
 
     private final SavedPinService savedPinService;
 
-    @PostMapping("/{pinId}/saves")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PinResponse save(@PathVariable UUID pinId) {
         return savedPinService.savePin(pinId);
     }
 
-    @DeleteMapping("/{pinId}/saves")
+    @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unsave(@PathVariable UUID pinId) {
         savedPinService.unsavePin(pinId);
