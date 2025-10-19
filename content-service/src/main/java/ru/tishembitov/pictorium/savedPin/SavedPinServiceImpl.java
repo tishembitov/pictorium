@@ -32,8 +32,9 @@ public class SavedPinServiceImpl implements SavedPinService {
         Pin pin = pinRepository.findById(pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + pinId + " not found"));
 
+        boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pinId);
+
         if (savedPinRepository.existsByUserIdAndPinId(userId, pinId)) {
-            boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pinId);
             return pinMapper.toResponse(pin, isLiked, true);
         }
 
@@ -45,7 +46,6 @@ public class SavedPinServiceImpl implements SavedPinService {
         savedPinRepository.save(savedPin);
         pinRepository.incrementSaveCount(pinId);
 
-        boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pinId);
         return pinMapper.toResponse(pin, isLiked, true);
     }
 
