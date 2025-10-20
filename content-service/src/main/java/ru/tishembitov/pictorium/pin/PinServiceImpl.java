@@ -74,7 +74,7 @@ public class PinServiceImpl implements PinService {
         Pin pin = pinMapper.toEntity(currentUserId, request);
 
         if (request.tags() != null && !request.tags().isEmpty()) {
-            Set<Tag> tags = tagService.getOrCreateTags(request.tags());
+            Set<Tag> tags = tagService.resolveTagsByNames(request.tags());
             pin.setTags(tags);
         }
 
@@ -94,6 +94,15 @@ public class PinServiceImpl implements PinService {
         checkPinOwnership(pin, currentUserId);
 
         pinMapper.updateEntity(pin, request);
+
+        if (request.tags() != null) {
+            pin.getTags().clear();
+            if (!request.tags().isEmpty()) {
+                Set<Tag> tags = tagService.resolveTagsByNames(request.tags());
+                pin.setTags(tags);
+            }
+        }
+
         pin = pinRepository.save(pin);
 
         PinInteractionDto interaction = getPinInteractionDto(id);
