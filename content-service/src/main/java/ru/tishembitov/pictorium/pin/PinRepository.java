@@ -21,6 +21,8 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
     @Query("SELECT DISTINCT p FROM Pin p LEFT JOIN FETCH p.tags WHERE p.id = :id")
     Optional<Pin> findByIdWithTags(@Param("id") UUID id);
 
+    Optional<Pin> findTopByOrderByCreatedAtDesc();
+
     @Query("""
     SELECT p.id as id,
            CASE WHEN l.id IS NOT NULL THEN true ELSE false END as liked,
