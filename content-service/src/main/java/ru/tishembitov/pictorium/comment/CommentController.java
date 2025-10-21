@@ -19,43 +19,43 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @PostMapping
-    public ResponseEntity<CommentResponse> createComment(
-            @RequestParam(required = false) UUID pinId,
-            @RequestParam(required = false) UUID parentCommentId,
-            @Valid @RequestBody CommentRequest request
-    ) {
-        CommentResponse response = commentService.createComment(pinId, parentCommentId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @GetMapping
-    public ResponseEntity<Page<CommentResponse>>  getComments(
-            @ModelAttribute CommentFilter filter,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        Page <CommentResponse> response = commentService.getComments(filter, pageable);
-        return ResponseEntity.ok(response);
-    }
-
     @GetMapping("/{commentId}")
-    public ResponseEntity<CommentResponse> getCommentById(@PathVariable UUID commentId) {
-        CommentResponse response = commentService.getCommentById(commentId);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<CommentResponse> getComment(@PathVariable UUID commentId) {
+        CommentResponse comment = commentService.getCommentById(commentId);
+        return ResponseEntity.ok(comment);
     }
 
     @PatchMapping("/{commentId}")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable UUID commentId,
-            @Valid @RequestBody CommentRequest request
+            @Valid @RequestBody CommentUpdateRequest request
     ) {
-        CommentResponse comment = commentService.updateComment(commentId, request);
-        return ResponseEntity.ok(comment);
+        CommentResponse updated = commentService.updateComment(commentId, request);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable UUID commentId) {
         commentService.deleteComment(commentId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{commentId}/replies")
+    public ResponseEntity<CommentResponse> createReply(
+            @PathVariable UUID commentId,
+            @Valid @RequestBody CommentCreateRequest request
+    ) {
+        CommentResponse reply = commentService.createReplyOnComment(commentId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(reply);
+    }
+
+    @GetMapping("/{commentId}/replies")
+    public ResponseEntity<Page<CommentResponse>> getReplies(
+            @PathVariable UUID commentId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        Page<CommentResponse> replies = commentService.getRepliesOnComment(commentId, pageable);
+        return ResponseEntity.ok(replies);
     }
 }

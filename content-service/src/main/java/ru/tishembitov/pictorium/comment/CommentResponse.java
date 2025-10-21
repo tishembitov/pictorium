@@ -9,7 +9,9 @@ public record CommentResponse(
          String userId,
          UUID parentCommentId,
          String content,
-         String image,
+         String imageUrl,
+
+         Boolean isLiked,
          Integer likeCount,
          Integer replyCount,
          Instant createdAt,

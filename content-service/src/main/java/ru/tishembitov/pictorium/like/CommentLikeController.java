@@ -20,13 +20,12 @@ public class CommentLikeController {
     private final LikeService likeService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<CommentResponse> likeComment(@PathVariable UUID commentId) {
-        return ResponseEntity.ok(likeService.likeComment(commentId));
+        CommentResponse response = likeService.likeComment(commentId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> unlikeComment(@PathVariable UUID commentId) {
         likeService.unlikeComment(commentId);
         return ResponseEntity.noContent().build();
@@ -37,6 +36,7 @@ public class CommentLikeController {
             @PathVariable UUID commentId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
-        return ResponseEntity.ok(likeService.getLikesOnComment(commentId, pageable));
+        Page<LikeResponse> likes = likeService.getLikesOnComment(commentId, pageable);
+        return ResponseEntity.ok(likes);
     }
 }

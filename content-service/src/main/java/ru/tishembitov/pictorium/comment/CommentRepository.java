@@ -1,7 +1,8 @@
 package ru.tishembitov.pictorium.comment;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
@@ -11,8 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 @Repository
-public interface CommentRepository extends JpaRepository<Comment, UUID>,
-        JpaSpecificationExecutor<Comment> {
+public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
     @Modifying
     @Query("UPDATE Comment c SET c.replyCount = c.replyCount + 1 WHERE c.id = :commentId")
@@ -29,4 +29,11 @@ public interface CommentRepository extends JpaRepository<Comment, UUID>,
     @Modifying
     @Query("UPDATE Comment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :commentId AND c.likeCount > 0")
     void decrementLikeCount(@Param("commentId") UUID commentId);
+
+    long countByParentCommentId(UUID parentCommentId);
+
+    Page<Comment> findByParentCommentIdOrderByCreatedAtDesc(UUID parentCommentId, Pageable pageable);
+
+    Page<Comment> findByPinIdOrderByCreatedAtDesc(UUID pinId, Pageable pageable);
+
 }
