@@ -31,6 +31,8 @@ public interface PinMapper {
     @Mapping(target = "savesCount", source = "pin.saveCount")
     @Mapping(target = "commentsCount", source = "pin.commentCount")
     @Mapping(target = "likesCount", source = "pin.likeCount")
+    @Mapping(target = "isLiked", expression = "java(isLiked)")
+    @Mapping(target = "isSaved", expression = "java(isSaved)")
     PinResponse toResponse(Pin pin, boolean isLiked, boolean isSaved);
 
     default Set<String> mapTags(Set<Tag> tags) {

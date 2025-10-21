@@ -60,4 +60,8 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
     @Modifying
     @Query("UPDATE Pin p SET p.commentCount = CASE WHEN p.commentCount > 0 THEN p.commentCount - 1 ELSE 0 END WHERE p.id = :pinId")
     void decrementCommentCount(@Param("pinId") UUID pinId);
+
+    @Modifying
+    @Query("UPDATE Pin p SET p.commentCount = CASE WHEN p.commentCount >= :count THEN p.commentCount - :count ELSE 0 END WHERE p.id = :pinId")
+    void decrementCommentCountBy(@Param("pinId") UUID pinId, @Param("count") long count);
 }
