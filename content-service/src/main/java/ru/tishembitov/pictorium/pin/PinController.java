@@ -28,22 +28,25 @@ public class PinController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PinResponse> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(pinService.getPinById(id));
+        PinResponse pin = pinService.getPinById(id);
+        return ResponseEntity.ok(pin);
     }
 
     @PostMapping
     public ResponseEntity<PinResponse> create(@Valid @RequestBody PinCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(pinService.createPin(request));
+        PinResponse created = pinService.createPin(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<PinResponse> update(@PathVariable UUID id, @Valid @RequestBody PinUpdateRequest request) {
-        return ResponseEntity.ok(pinService.updatePin(id, request));
+        PinResponse updated = pinService.updatePin(id, request);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         pinService.deletePin(id);
+        return ResponseEntity.noContent().build();
     }
 }

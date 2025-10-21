@@ -1,10 +1,8 @@
 package ru.tishembitov.pictorium.tag;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +18,7 @@ public class TagController {
 
     @GetMapping
     public ResponseEntity<Page<TagResponse>> getAllTags(Pageable pageable) {
-        Page<TagResponse> tags = tagService.findAll(pageable);
-        return ResponseEntity.ok().body(tags);
+        return ResponseEntity.ok(tagService.findAll(pageable));
     }
 
     @GetMapping("/{id}")
@@ -39,13 +36,11 @@ public class TagController {
             @RequestParam String q,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        List<TagResponse> tags = tagService.searchByName(q, limit);
-        return ResponseEntity.ok().body(tags);
+        return ResponseEntity.ok(tagService.searchByName(q, limit));
     }
 
     @GetMapping("/categories")
     public ResponseEntity<List<CategoryResponse>> getCategories(@RequestParam(defaultValue = "8") int limit) {
-        List<CategoryResponse> categories = tagService.getCategories(limit);
-        return ResponseEntity.ok().body(categories);
+        return ResponseEntity.ok(tagService.getCategories(limit));
     }
 }

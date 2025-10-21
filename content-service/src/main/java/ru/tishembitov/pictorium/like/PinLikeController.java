@@ -20,13 +20,12 @@ public class PinLikeController {
     private final LikeService likeService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<PinResponse> likePin(@PathVariable UUID pinId) {
-        return ResponseEntity.ok(likeService.likePin(pinId));
+        PinResponse response = likeService.likePin(pinId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> unlikePin(@PathVariable UUID pinId) {
         likeService.unlikePin(pinId);
         return ResponseEntity.noContent().build();
@@ -37,6 +36,7 @@ public class PinLikeController {
             @PathVariable UUID pinId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
-        return ResponseEntity.ok(likeService.getLikesOnPin(pinId, pageable));
+        Page<LikeResponse> likes = likeService.getLikesOnPin(pinId, pageable);
+        return ResponseEntity.ok(likes);
     }
 }

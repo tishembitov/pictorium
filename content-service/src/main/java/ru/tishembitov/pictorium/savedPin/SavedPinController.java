@@ -18,12 +18,13 @@ public class SavedPinController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<PinResponse> save(@PathVariable UUID pinId) {
-        return ResponseEntity.ok().body(savedPinService.savePin(pinId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedPinService.savePin(pinId));
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unsave(@PathVariable UUID pinId) {
+    public ResponseEntity<Void> unsave(@PathVariable UUID pinId) {
         savedPinService.unsavePin(pinId);
+        return ResponseEntity.noContent().build();
     }
 }
