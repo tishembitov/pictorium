@@ -28,12 +28,12 @@ public interface PinMapper {
 
     @Mapping(target = "userId", source = "pin.authorId")
     @Mapping(target = "tags", source = "pin.tags")
-    @Mapping(target = "savesCount", source = "pin.saveCount")
-    @Mapping(target = "commentsCount", source = "pin.commentCount")
-    @Mapping(target = "likesCount", source = "pin.likeCount")
+    @Mapping(target = "saveCount", source = "pin.saveCount")
+    @Mapping(target = "commentCount", source = "pin.commentCount")
+    @Mapping(target = "likeCount", source = "pin.likeCount")
     @Mapping(target = "isLiked", expression = "java(isLiked)")
     @Mapping(target = "isSaved", expression = "java(isSaved)")
-    PinResponse toResponse(Pin pin, boolean isLiked, boolean isSaved);
+    PinResponse toResponse(Pin pin, Boolean isLiked, Boolean isSaved);
 
     default Set<String> mapTags(Set<Tag> tags) {
         if (tags == null) return Set.of();

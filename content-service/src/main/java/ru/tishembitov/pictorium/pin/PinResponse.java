@@ -18,9 +18,9 @@ public record PinResponse (
      Instant updatedAt,
      Set<String> tags,
 
-     boolean isLiked,
-     boolean isSaved,
-     long savesCount,
-     long commentsCount,
-     long likesCount
+     Boolean isLiked,
+     Boolean isSaved,
+     Integer saveCount,
+     Integer commentCount,
+     Integer likeCount
 ) {}
