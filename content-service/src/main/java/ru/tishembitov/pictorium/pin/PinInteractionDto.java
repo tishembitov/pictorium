@@ -6,7 +6,7 @@ public record PinInteractionDto(
         Boolean isSaved
 )
 {
-    static PinInteractionDto empty() {
+    public static PinInteractionDto empty() {
         return new PinInteractionDto(false, false);
     }
 }
