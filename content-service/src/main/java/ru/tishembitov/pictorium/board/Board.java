@@ -48,4 +48,7 @@ public class Board {
     )
     @Builder.Default
     private Set<Pin> pins = new HashSet<>();
+
+    @Builder.Default
+    private Integer pinCount = 0;
 }

@@ -1,0 +1,29 @@
+package ru.tishembitov.pictorium.board;
+
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import ru.tishembitov.pictorium.pin.PinResponse;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface BoardService {
+
+    BoardResponse createBoard(@Valid BoardCreateRequest request);
+
+    List<BoardResponse> getMyBoards();
+
+    List<BoardResponse> getUserBoards(String userId);
+
+    BoardResponse getBoardById(UUID boardId);
+
+    void addPinToBoard(UUID boardId, UUID pinId);
+
+    void removePinFromBoard(UUID boardId, UUID pinId);
+
+    Page<PinResponse> getBoardPins(UUID boardId, Pageable pageable);
+
+    void deleteBoard(UUID boardId);
+}
+
