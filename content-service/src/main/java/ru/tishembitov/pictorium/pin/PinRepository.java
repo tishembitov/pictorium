@@ -1,5 +1,7 @@
 package ru.tishembitov.pictorium.pin;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -64,4 +66,7 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
     @Modifying
     @Query("UPDATE Pin p SET p.commentCount = CASE WHEN p.commentCount >= :count THEN p.commentCount - :count ELSE 0 END WHERE p.id = :pinId")
     void decrementCommentCountBy(@Param("pinId") UUID pinId, @Param("count") long count);
+
+    @Query("SELECT p FROM Board b JOIN b.pins p WHERE b.id = :boardId")
+    Page<Pin> findByBoardId(@Param("boardId") UUID boardId, Pageable pageable);
 }
