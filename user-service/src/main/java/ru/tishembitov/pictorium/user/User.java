@@ -29,9 +29,9 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    private String image;
+    private String imageUrl;
 
-    private String bannerImage;
+    private String bannerImageUrl;
 
     private String description;
 

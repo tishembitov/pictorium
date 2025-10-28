@@ -14,8 +14,8 @@ public interface UserMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
-    @Mapping(target = "image", ignore = true)
-    @Mapping(target = "bannerImage", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
+    @Mapping(target = "bannerImageUrl", ignore = true)
     void updateUserFromUpdateDto(UserUpdateRequest userUpdateRequest, @MappingTarget User user);
 
     default Page<UserResponse> toResponseDtoPage(Page<User> userPage) {
