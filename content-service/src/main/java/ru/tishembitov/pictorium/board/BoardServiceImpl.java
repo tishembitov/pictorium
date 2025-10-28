@@ -64,13 +64,12 @@ public class BoardServiceImpl implements BoardService {
         Pin pin = pinRepository.findById(pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
 
-        if (board.getPins().contains(pin)) {
+        if (boardRepository.existsPinOnBoard(boardId, pinId)) {
             throw new BadRequestException("Pin is already in the board");
         }
 
         board.getPins().add(pin);
         boardRepository.incrementPinCount(boardId);
-        boardRepository.save(board);
 
         // TODO: Если нужно, отправить уведомление автору пина
         // if (!pin.getAuthorId().equals(userId)) {
@@ -93,7 +92,6 @@ public class BoardServiceImpl implements BoardService {
         }
 
         boardRepository.decrementPinCount(boardId);
-        boardRepository.save(board);
         log.info("Pin removed from board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
     }
 
@@ -127,7 +125,7 @@ public class BoardServiceImpl implements BoardService {
 
     public void deleteBoard(UUID boardId) {
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + boardId));
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
         checkBoardOwnership(board, currentUserId);

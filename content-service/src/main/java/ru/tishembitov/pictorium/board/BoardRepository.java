@@ -17,11 +17,11 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
 
     Optional<Board> findByIdAndUserId(UUID id, String userId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Board b SET b.pinCount = b.pinCount + 1 WHERE b.id = :boardId")
     void incrementPinCount(@Param("boardId") UUID boardId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Board b SET b.pinCount = b.pinCount - 1 WHERE b.id = :boardId AND b.pinCount > 0")
     void decrementPinCount(@Param("boardId") UUID boardId);
 
@@ -34,4 +34,7 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
 
     @Query("SELECT b FROM Board b LEFT JOIN FETCH b.pins WHERE b.id = :boardId")
     Optional<Board> findByIdWithPins(@Param("boardId") UUID boardId);
+
+    @Query("SELECT (COUNT(p) > 0) FROM Board b JOIN b.pins p WHERE b.id = :boardId AND p.id = :pinId")
+    boolean existsPinOnBoard(UUID boardId, UUID pinId);
 }
