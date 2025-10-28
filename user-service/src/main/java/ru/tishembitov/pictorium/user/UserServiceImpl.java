@@ -4,10 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import ru.tishembitov.pictorium.exception.UsernameAlreadyExistsException;
 import ru.tishembitov.pictorium.exception.UserNotFoundException;
-import ru.tishembitov.pictorium.file.FileStorageService;
 
 @Service
 @RequiredArgsConstructor
@@ -16,7 +14,6 @@ public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final FileStorageService fileStorageService;
 
     @Override
     public UserResponse getUserById(String id) {
@@ -48,42 +45,6 @@ public class UserServiceImpl implements UserService{
         User updatedUser = userRepository.save(user);
 
         log.info("User updated successfully: {}", id);
-        return userMapper.toResponseDto(updatedUser);
-    }
-
-    @Override
-    @Transactional
-    public UserResponse uploadBannerImage(String id, MultipartFile file) {
-        User user = getUserByIdOrThrow(id);
-
-        if (user.getBannerImage() != null) {
-            fileStorageService.deleteFile(user.getBannerImage());
-        }
-
-        String bannerPath = fileStorageService.saveFile(file, "banner");
-        user.setBannerImage(bannerPath);
-
-        User updatedUser = userRepository.save(user);
-        log.info("Banner image uploaded successfully for user: {}", id);
-
-        return userMapper.toResponseDto(updatedUser);
-    }
-
-    @Override
-    @Transactional
-    public UserResponse uploadProfileImage(String id, MultipartFile file) {
-        User user = getUserByIdOrThrow(id);
-
-        if (user.getImage() != null) {
-            fileStorageService.deleteFile(user.getImage());
-        }
-
-        String imagePath = fileStorageService.saveFile(file, "profile");
-        user.setImage(imagePath);
-
-        User updatedUser = userRepository.save(user);
-        log.info("Profile image uploaded successfully for user: {}", id);
-
         return userMapper.toResponseDto(updatedUser);
     }
 

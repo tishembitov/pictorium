@@ -82,32 +82,6 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(InvalidFileException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidFileException(InvalidFileException exception) {
-        log.warn("Invalid file: {}", exception.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body(new ErrorResponse(
-                        OffsetDateTime.now(),
-                        "Unsupported Media Type",
-                        "Invalid file",
-                        Collections.singletonList(exception.getMessage())
-                ));
-    }
-
-    @ExceptionHandler(FileStorageException.class)
-    public ResponseEntity<ErrorResponse> handleFileStorageException(FileStorageException exception) {
-        log.error("File storage error: {}", exception.getMessage(), exception);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse(
-                        OffsetDateTime.now(),
-                        "Internal Server Error",
-                        "File storage error",
-                        Collections.singletonList(exception.getMessage())
-                ));
-    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException exception) {
         List<String> details = exception.getBindingResult().getFieldErrors()
