@@ -19,12 +19,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(jwt.getSubject()));
     }
 
-    @GetMapping("/user_id/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String userId) {
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
-    @GetMapping("/user_username/{username}")
+    @GetMapping("/user/{username}")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }

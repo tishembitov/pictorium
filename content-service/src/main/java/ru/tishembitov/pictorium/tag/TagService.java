@@ -15,7 +15,7 @@ public interface TagService {
 
     List<TagResponse> findByPinId(UUID pinId);
 
-    TagResponse findById(UUID id);
+    TagResponse findById(UUID tagId);
 
     List<CategoryResponse> getCategories(int limit);
 

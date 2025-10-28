@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 
 public interface UserService {
 
-    UserResponse getUserById(String id);
+    UserResponse getUserById(String userId);
 
     UserResponse getUserByUsername(String username);
 

@@ -16,9 +16,9 @@ public class UserServiceImpl implements UserService{
     private final UserMapper userMapper;
 
     @Override
-    public UserResponse getUserById(String id) {
-        log.info("Fetching user by ID: {}", id);
-        User user = getUserByIdOrThrow(id);
+    public UserResponse getUserById(String userId) {
+        log.info("Fetching user by ID: {}", userId);
+        User user = getUserByIdOrThrow(userId);
         return userMapper.toResponseDto(user);
     }
 

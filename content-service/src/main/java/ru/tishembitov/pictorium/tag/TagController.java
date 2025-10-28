@@ -21,9 +21,9 @@ public class TagController {
         return ResponseEntity.ok(tagService.findAll(pageable));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TagResponse> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(tagService.findById(id));
+    @GetMapping("/{tagId}")
+    public ResponseEntity<TagResponse> getById(@PathVariable UUID tagId) {
+        return ResponseEntity.ok(tagService.findById(tagId));
     }
 
     @GetMapping("/pins/{pinId}")

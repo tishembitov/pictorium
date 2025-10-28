@@ -48,25 +48,25 @@ public class SubscriptionController {
         return ResponseEntity.ok(subscriptionService.checkUserFollow(jwt.getSubject(), userIdToCheck));
     }
 
-    @GetMapping("/followers/{id}")
+    @GetMapping("/followers/{userId}")
     public ResponseEntity<Page<UserResponse>> getFollowers(
-            @PathVariable String id,
+            @PathVariable String userId,
             @PageableDefault(
                     sort = "createdAt",
                     direction = Sort.Direction.DESC
             ) Pageable pageable) {
 
-        return ResponseEntity.ok(subscriptionService.getFollowers(id, pageable));
+        return ResponseEntity.ok(subscriptionService.getFollowers(userId, pageable));
     }
 
-    @GetMapping("/following/{id}")
+    @GetMapping("/following/{userId}")
     public ResponseEntity<Page<UserResponse>> getFollowing(
-            @PathVariable String id,
+            @PathVariable String userId,
             @PageableDefault(
                     sort = "createdAt",
                     direction = Sort.Direction.DESC
             ) Pageable pageable) {
 
-        return ResponseEntity.ok(subscriptionService.getFollowing(id, pageable));
+        return ResponseEntity.ok(subscriptionService.getFollowing(userId, pageable));
     }
 }

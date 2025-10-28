@@ -9,15 +9,15 @@ import java.util.UUID;
 
 public interface PinService {
 
-    PinResponse getPinById(UUID id);
+    PinResponse getPinById(UUID pinId);
 
     Page<PinResponse> findPins(PinFilter filter, Pageable pageable);
 
     PinResponse createPin(PinCreateRequest request);
 
-    PinResponse updatePin(UUID id, PinUpdateRequest request);
+    PinResponse updatePin(UUID pinId, PinUpdateRequest request);
 
-    void deletePin(UUID id);
+    void deletePin(UUID pinId);
 
     Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds);
 

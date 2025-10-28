@@ -26,9 +26,9 @@ public class PinController {
         return ResponseEntity.ok(page);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PinResponse> getById(@PathVariable UUID id) {
-        PinResponse pin = pinService.getPinById(id);
+    @GetMapping("/{pinId}")
+    public ResponseEntity<PinResponse> getById(@PathVariable UUID pinId) {
+        PinResponse pin = pinService.getPinById(pinId);
         return ResponseEntity.ok(pin);
     }
 
@@ -38,15 +38,15 @@ public class PinController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<PinResponse> update(@PathVariable UUID id, @Valid @RequestBody PinUpdateRequest request) {
-        PinResponse updated = pinService.updatePin(id, request);
+    @PatchMapping("/{pinId}")
+    public ResponseEntity<PinResponse> update(@PathVariable UUID pinId, @Valid @RequestBody PinUpdateRequest request) {
+        PinResponse updated = pinService.updatePin(pinId, request);
         return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        pinService.deletePin(id);
+    @DeleteMapping("/{pinId}")
+    public ResponseEntity<Void> delete(@PathVariable UUID pinId) {
+        pinService.deletePin(pinId);
         return ResponseEntity.noContent().build();
     }
 }

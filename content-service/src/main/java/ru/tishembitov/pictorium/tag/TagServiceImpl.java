@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
-import ru.tishembitov.pictorium.pin.Pin;
 import ru.tishembitov.pictorium.pin.PinRepository;
 
 import java.util.*;
@@ -50,10 +49,10 @@ public class TagServiceImpl implements TagService {
         return tags.map(tagMapper::toResponse);
     }
 
-    public TagResponse findById(UUID id) {
-        log.debug("Fetching tag by id: {}", id);
+    public TagResponse findById(UUID tagId) {
+        log.debug("Fetching tag by id: {}", tagId);
 
-        Tag tag = findTagById(id);
+        Tag tag = findTagById(tagId);
         return tagMapper.toResponse(tag);
     }
 

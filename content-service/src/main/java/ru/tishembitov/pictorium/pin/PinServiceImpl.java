@@ -27,11 +27,11 @@ public class PinServiceImpl implements PinService {
     private final TagService tagService;
 
     @Override
-    public PinResponse getPinById(UUID id) {
-        Pin pin = pinRepository.findByIdWithTags(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + id + " not found"));
+    public PinResponse getPinById(UUID pinId) {
+        Pin pin = pinRepository.findByIdWithTags(pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + pinId + " not found"));
 
-        PinInteractionDto interaction = getPinInteractionDto(id);
+        PinInteractionDto interaction = getPinInteractionDto(pinId);
 
         return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
     }
@@ -84,10 +84,10 @@ public class PinServiceImpl implements PinService {
 
     @Override
     @Transactional
-    public PinResponse updatePin(UUID id, PinUpdateRequest request) {
-        Pin pin = pinRepository.findByIdWithTags(id)
+    public PinResponse updatePin(UUID pinId, PinUpdateRequest request) {
+        Pin pin = pinRepository.findByIdWithTags(pinId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Pin with id " + id + " not found"));
+                        "Pin with id " + pinId + " not found"));
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
         checkPinOwnership(pin, currentUserId);
@@ -104,16 +104,16 @@ public class PinServiceImpl implements PinService {
 
         pin = pinRepository.save(pin);
 
-        PinInteractionDto interaction = getPinInteractionDto(id);
+        PinInteractionDto interaction = getPinInteractionDto(pinId);
 
         return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
     }
 
     @Override
     @Transactional
-    public void deletePin(UUID id) {
-        Pin pin = pinRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + id + " not found"));
+    public void deletePin(UUID pinId) {
+        Pin pin = pinRepository.findById(pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + pinId + " not found"));
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
         checkPinOwnership(pin, currentUserId);
