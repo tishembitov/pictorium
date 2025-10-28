@@ -5,9 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.exception.AccessDeniedException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
@@ -79,7 +79,6 @@ public class PinServiceImpl implements PinService {
         }
 
         pin = pinRepository.save(pin);
-
         return pinMapper.toResponse(pin, false, false);
     }
 
@@ -133,7 +132,7 @@ public class PinServiceImpl implements PinService {
                 .orElseGet(PinInteractionDto::empty);
     }
 
-    private Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds) {
+    public Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds) {
         return SecurityUtils.getCurrentUserId()
                 .map(userId -> calculateUserInteractionsBatch(userId, pinIds))
                 .orElseGet(() -> createEmptyInteractions(pinIds));
@@ -151,7 +150,7 @@ public class PinServiceImpl implements PinService {
         pinIds.forEach(id -> result.put(id, PinInteractionDto.empty()));
 
         projections.forEach(proj ->
-                result.put(proj.getId(), new PinInteractionDto(proj.isLiked(), proj.isSaved()))
+                result.put(proj.getId(), new PinInteractionDto(proj.getLiked(), proj.getSaved()))
         );
 
         return result;

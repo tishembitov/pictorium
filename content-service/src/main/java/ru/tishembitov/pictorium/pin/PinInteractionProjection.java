@@ -4,6 +4,6 @@ import java.util.UUID;
 
 public interface PinInteractionProjection{
         UUID getId();
-        Boolean isLiked();
-        Boolean isSaved();
+        Boolean getLiked();
+        Boolean getSaved();
 }
