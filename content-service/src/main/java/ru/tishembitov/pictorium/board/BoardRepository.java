@@ -1,6 +1,7 @@
 package ru.tishembitov.pictorium.board;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +16,14 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
     List<Board> findByUserIdOrderByCreatedAtDesc(String userId);
 
     Optional<Board> findByIdAndUserId(UUID id, String userId);
+
+    @Modifying
+    @Query("UPDATE Board b SET b.pinCount = b.pinCount + 1 WHERE b.id = :boardId")
+    void incrementPinCount(@Param("boardId") UUID boardId);
+
+    @Modifying
+    @Query("UPDATE Board b SET b.pinCount = b.pinCount - 1 WHERE b.id = :boardId AND b.pinCount > 0")
+    void decrementPinCount(@Param("boardId") UUID boardId);
 
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END " +
             "FROM Board b JOIN b.pins p " +

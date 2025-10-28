@@ -65,6 +65,7 @@ public class BoardServiceImpl implements BoardService {
         }
 
         board.getPins().add(pin);
+        boardRepository.incrementPinCount(boardId);
         boardRepository.save(board);
 
         // TODO: Если нужно, отправить уведомление автору пина
@@ -87,6 +88,7 @@ public class BoardServiceImpl implements BoardService {
             throw new ResourceNotFoundException("Pin not found in board");
         }
 
+        boardRepository.decrementPinCount(boardId);
         boardRepository.save(board);
         log.info("Pin removed from board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
     }
