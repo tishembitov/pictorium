@@ -14,6 +14,7 @@ import ru.tishembitov.pictorium.user.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class SubscriptionServiceImpl implements SubscriptionService{
 
@@ -64,8 +65,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
 
     public FollowCheckResponse checkUserFollow(String id, String userIdToCheck) {
 
-        boolean isFollowing = subscriptionRepository.existsByFollowerIdAndFollowingId(
-                id, userIdToCheck);
+        boolean isFollowing = subscriptionRepository.existsByFollowerIdAndFollowingId(id, userIdToCheck);
 
         return new FollowCheckResponse(isFollowing);
     }
