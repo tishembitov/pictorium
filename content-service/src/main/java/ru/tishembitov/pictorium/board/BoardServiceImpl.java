@@ -29,6 +29,10 @@ public class BoardServiceImpl implements BoardService {
 
     public BoardResponse createBoard(BoardCreateRequest request) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        if (boardRepository.existsByUserIdAndTitle(currentUserId, request.title().trim())) {
+            throw new BadRequestException("Board with title '" + request.title() + "' already exists");
+        }
         Board board = boardMapper.toEntity(request, currentUserId);
 
         Board savedBoard = boardRepository.save(board);

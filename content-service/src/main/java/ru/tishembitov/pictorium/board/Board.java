@@ -13,7 +13,15 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "boards")
+@Table(
+        name = "boards",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_board_user_title",
+                        columnNames = {"user_id", "title"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

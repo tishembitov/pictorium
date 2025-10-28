@@ -25,6 +25,8 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
     @Query("UPDATE Board b SET b.pinCount = b.pinCount - 1 WHERE b.id = :boardId AND b.pinCount > 0")
     void decrementPinCount(@Param("boardId") UUID boardId);
 
+    boolean existsByUserIdAndTitle(String userId, String title);
+
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END " +
             "FROM Board b JOIN b.pins p " +
             "WHERE b.id = :boardId AND p.id = :pinId")
