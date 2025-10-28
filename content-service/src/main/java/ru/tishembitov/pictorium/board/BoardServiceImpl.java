@@ -40,16 +40,19 @@ public class BoardServiceImpl implements BoardService {
         return boardMapper.toResponse(savedBoard);
     }
 
+    @Transactional(readOnly = true)
     public List<BoardResponse> getUserBoards(String userId) {
         List<Board> boards = boardRepository.findByUserIdOrderByCreatedAtDesc(userId);
         return boardMapper.toResponseList(boards);
     }
 
+    @Transactional(readOnly = true)
     public List<BoardResponse> getMyBoards() {
         String currentUserId = SecurityUtils.requireCurrentUserId();
         return getUserBoards(currentUserId);
     }
 
+    @Transactional(readOnly = true)
     public BoardResponse getBoardById(UUID boardId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + boardId));
