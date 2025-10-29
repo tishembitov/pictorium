@@ -57,7 +57,7 @@ public class SavedPinServiceImpl implements SavedPinService {
             throw new ResourceNotFoundException("Pin with id " + pinId + " not found");
         }
 
-        SavedPin savedPin = savedPinRepository.findByUserIdAndPinId((userId), pinId)
+        SavedPin savedPin = savedPinRepository.findByUserIdAndPinId(userId, pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin is not saved"));
 
         savedPinRepository.delete(savedPin);
