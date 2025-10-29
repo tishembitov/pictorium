@@ -39,31 +39,31 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
             @Param("pinIds") Set<UUID> pinIds
     );
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.likeCount = p.likeCount + 1 WHERE p.id = :pinId")
     void incrementLikeCount(@Param("pinId") UUID pinId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.likeCount = CASE WHEN p.likeCount > 0 THEN p.likeCount - 1 ELSE 0 END WHERE p.id = :pinId")
     void decrementLikeCount(@Param("pinId") UUID pinId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.saveCount = p.saveCount + 1 WHERE p.id = :pinId")
     void incrementSaveCount(@Param("pinId") UUID pinId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.saveCount = CASE WHEN p.saveCount > 0 THEN p.saveCount - 1 ELSE 0 END WHERE p.id = :pinId")
     void decrementSaveCount(@Param("pinId") UUID pinId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.commentCount = p.commentCount + 1 WHERE p.id = :pinId")
     void incrementCommentCount(@Param("pinId") UUID pinId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.commentCount = CASE WHEN p.commentCount > 0 THEN p.commentCount - 1 ELSE 0 END WHERE p.id = :pinId")
     void decrementCommentCount(@Param("pinId") UUID pinId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE Pin p SET p.commentCount = CASE WHEN p.commentCount >= :count THEN p.commentCount - :count ELSE 0 END WHERE p.id = :pinId")
     void decrementCommentCountBy(@Param("pinId") UUID pinId, @Param("count") long count);
 
