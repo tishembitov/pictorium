@@ -29,7 +29,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
-    @PatchMapping(value = "/information")
+    @PatchMapping(value = "/me")
     public ResponseEntity<UserResponse> updateUser(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UserUpdateRequest userUpdateRequest) {
