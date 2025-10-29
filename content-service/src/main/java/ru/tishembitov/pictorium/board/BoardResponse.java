@@ -8,6 +8,5 @@ public record BoardResponse(
      String userId,
      String title,
      Instant createdAt,
-     Instant updatedAt,
-     Integer pinCount
+     Instant updatedAt
 ) {}
