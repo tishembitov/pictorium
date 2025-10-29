@@ -14,8 +14,8 @@ public class SelectedBoardController {
 
     private final SelectedBoardService selectedBoardService;
 
-    @PatchMapping
-    public ResponseEntity<Void> select(@RequestParam UUID boardId) {
+    @PatchMapping("/{boardId}")
+    public ResponseEntity<Void> select(@PathVariable UUID boardId) {
         selectedBoardService.selectBoard(boardId);
         return ResponseEntity.ok().build();
     }
