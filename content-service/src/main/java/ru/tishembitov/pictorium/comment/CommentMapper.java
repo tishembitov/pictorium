@@ -24,6 +24,8 @@ public interface CommentMapper {
     @Mapping(target = "parentComment", source = "parentComment")
     @Mapping(target = "content", source = "request.content")
     @Mapping(target = "imageUrl", source = "request.imageUrl")
+    @Mapping(target = "likeCount", constant = "0")
+    @Mapping(target = "replyCount", constant = "0")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Comment toEntity(CommentCreateRequest request, Pin pin, String userId, Comment parentComment);
