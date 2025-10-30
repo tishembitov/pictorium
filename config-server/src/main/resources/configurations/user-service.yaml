@@ -12,10 +12,5 @@ spring:
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-file:
-  upload-dir: ./uploads
-  allowed-extensions: jpg,jpeg,png,gif,pdf,doc,docx,txt
-  max-size: 10485760
-
 server:
   port: 8010
