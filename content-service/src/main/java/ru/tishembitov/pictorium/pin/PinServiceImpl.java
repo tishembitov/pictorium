@@ -25,7 +25,8 @@ public class PinServiceImpl implements PinService {
     private final PinRepository pinRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
-
+    //TODO: реализовать обработку уведомлений и счетчика просмотров через события Kafka
+    //TODO: сделать проверку прав доступа через репозиторий одним запросом
     @Override
     public PinResponse getPinById(UUID pinId) {
         Pin pin = pinRepository.findByIdWithTags(pinId)

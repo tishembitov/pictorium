@@ -27,6 +27,7 @@ public class CommentServiceImpl implements CommentService {
     private final PinRepository pinRepository;
     private final CommentMapper commentMapper;
     //private final NotificationService notificationService;
+    //TODO: сделать изменение счетчиков на n, а не единично + сделать в миграции liquabase каскадное удаление
 
     public CommentResponse createCommentOnPin(UUID pinId, CommentCreateRequest request) {
         Pin pin = pinRepository.findById(pinId)
