@@ -7,7 +7,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -34,8 +33,6 @@ public class User {
     private String bannerImageUrl;
 
     private String description;
-
-    private UUID selectedBoardId;
 
     private Instant recommendationCreatedAt;
 
