@@ -23,7 +23,7 @@ import java.util.UUID;
 public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
-    private final LikeRepository SavedPinRepository;
+    private final LikeRepository SavedPinRepository; // TODO: переименовать в savedPinRepository и использовать правильный тип
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
     private final PinMapper pinMapper;
@@ -44,11 +44,7 @@ public class LikeServiceImpl implements LikeService {
             return pinMapper.toResponse(pin, true, isSaved);
         }
 
-        Like like = Like.builder()
-                .userId(userId)
-                .pin(pin)
-                .build();
-
+        Like like = likeMapper.toEntity(userId, pin);
         likeRepository.save(like);
         pinRepository.incrementLikeCount(pinId);
 
@@ -91,15 +87,10 @@ public class LikeServiceImpl implements LikeService {
                         "Comment with id " + commentId + " not found"));
 
         if (likeRepository.existsByUserIdAndCommentId(userId, commentId)) {
-            boolean isLiked = true;
-            return commentMapper.toResponse(comment, isLiked);
+            return commentMapper.toResponse(comment, true);
         }
 
-        Like like = Like.builder()
-                .userId(userId)
-                .comment(comment)
-                .build();
-
+        Like like = likeMapper.toEntity(userId, comment);
         likeRepository.save(like);
         commentRepository.incrementLikeCount(commentId);
 

@@ -34,13 +34,7 @@ public class CommentServiceImpl implements CommentService {
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        Comment comment = Comment.builder()
-                .pin(pin)
-                .userId(currentUserId)
-                .content(request.content())
-                .imageUrl(request.imageUrl())
-                .build();
-
+        Comment comment = commentMapper.toEntity(request, pin, currentUserId, null);
         comment = commentRepository.save(comment);
 
         pinRepository.incrementCommentCount(pinId);
@@ -74,15 +68,9 @@ public class CommentServiceImpl implements CommentService {
         String currentUserId = SecurityUtils.requireCurrentUserId();
         Pin pin = parentComment.getPin();
 
-        Comment reply = Comment.builder()
-                .pin(pin)
-                .parentComment(parentComment)
-                .userId(currentUserId)
-                .content(request.content())
-                .imageUrl(request.imageUrl())
-                .build();
-
+        Comment reply = commentMapper.toEntity(request, pin, currentUserId, parentComment);
         reply = commentRepository.save(reply);
+
         commentRepository.incrementReplyCount(commentId);
         pinRepository.incrementCommentCount(pin.getId());
 
@@ -154,8 +142,7 @@ public class CommentServiceImpl implements CommentService {
         if (comment.getParentComment() != null) {
             commentRepository.decrementReplyCount(comment.getParentComment().getId());
             pinRepository.decrementCommentCount(pinId);
-        }
-        else{
+        } else {
             long replyCount = commentRepository.countByParentCommentId(commentId);
             long totalToDelete = 1 + replyCount;
             pinRepository.decrementCommentCountBy(pinId, totalToDelete);
