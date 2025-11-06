@@ -43,26 +43,26 @@ spring:
           predicates:
             - Path=/content-service/**
 
-        # Social Service Routes
-        - id: comments-service-route
-          uri: lb://SOCIAL-SERVICE
-          predicates:
-            - Path=/api/v1/comments/**
-
-        - id: likes-service-route
-          uri: lb://SOCIAL-SERVICE
-          predicates:
-            - Path=/api/v1/likes/**
-
-        - id: subscriptions-service-route
-          uri: lb://SOCIAL-SERVICE
-          predicates:
-            - Path=/api/v1/subscriptions/**
-
-        - id: social-service-swagger
-          uri: lb://SOCIAL-SERVICE
-          predicates:
-            - Path=/social-service/**
+#        # Social Service Routes
+#        - id: comments-service-route
+#          uri: lb://SOCIAL-SERVICE
+#          predicates:
+#            - Path=/api/v1/comments/**
+#
+#        - id: likes-service-route
+#          uri: lb://SOCIAL-SERVICE
+#          predicates:
+#            - Path=/api/v1/likes/**
+#
+#        - id: subscriptions-service-route
+#          uri: lb://SOCIAL-SERVICE
+#          predicates:
+#            - Path=/api/v1/subscriptions/**
+#
+#        - id: social-service-swagger
+#          uri: lb://SOCIAL-SERVICE
+#          predicates:
+#            - Path=/social-service/**
 
         # Chat Service Routes
         - id: chat-service-route
@@ -118,16 +118,16 @@ spring:
           predicates:
             - Path=/search-service/**
 
-        # Media Service Routes
-        - id: media-service-route
-          uri: lb://MEDIA-SERVICE
+        # Storage Service Routes
+        - id: storage-service-route
+          uri: lb://STORAGE-SERVICE
           predicates:
-            - Path=/api/v1/media/**
+            - Path=/api/v1/storage/**
 
-        - id: media-service-swagger
-          uri: lb://MEDIA-SERVICE
+        - id: storage-service-swagger
+          uri: lb://STORAGE-SERVICE
           predicates:
-            - Path=/media-service/**
+            - Path=/storage-service/**
 
         # Admin Service Routes
         - id: admin-service-route
