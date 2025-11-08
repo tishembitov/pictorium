@@ -212,10 +212,12 @@ public class ImageServiceImpl implements ImageService {
                     .map(itemResult -> {
                         try {
                             Item item = itemResult.get();
+                            String fileName = extractFileName(item.objectName());
+
                             return new ImageMetadata(
                                     extractImageId(item.objectName()),
-                                    extractFileName(item.objectName()),
-                                    null,
+                                    fileName,
+                                    detectContentType(fileName),
                                     item.size(),
                                     item.etag(),
                                     item.lastModified().toInstant().toEpochMilli(),
@@ -233,6 +235,18 @@ public class ImageServiceImpl implements ImageService {
             log.error("Failed to list images by category: {}", category, e);
             throw new ImageStorageException("Failed to list images: " + e.getMessage(), e);
         }
+    }
+
+    private String detectContentType(String fileName) {
+        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+
+        return switch (extension) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            default -> "application/octet-stream";
+        };
     }
 
     private void validateImage(MultipartFile file) {
@@ -270,15 +284,12 @@ public class ImageServiceImpl implements ImageService {
     private String buildObjectName(String imageId, String category, String extension) {
         StringBuilder builder = new StringBuilder();
 
-        // Категория (опционально)
         if (StringUtils.isNotEmpty(category)) {
             builder.append(category).append("/");
         }
 
-        // Дата для организации файлов
         builder.append(ZonedDateTime.now().toLocalDate().toString()).append("/");
 
-        // ID и расширение
         builder.append(imageId).append(".").append(extension);
 
         return builder.toString();
