@@ -21,7 +21,7 @@ public class ImageController {
     private final ImageServiceImpl imageService;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ImageUploadResponse> uploadImage(ImageUploadRequest request) {
+    public ResponseEntity<ImageUploadResponse> uploadImage(@ModelAttribute ImageUploadRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(imageService.uploadImage(request));
     }
 
