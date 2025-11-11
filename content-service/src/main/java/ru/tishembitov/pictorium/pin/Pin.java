@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import ru.tishembitov.pictorium.board.Board;
 import ru.tishembitov.pictorium.comment.Comment;
 import ru.tishembitov.pictorium.like.Like;
 import ru.tishembitov.pictorium.savedPin.SavedPin;
