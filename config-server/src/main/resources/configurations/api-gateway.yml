@@ -33,6 +33,11 @@ spring:
           predicates:
             - Path=/api/v1/boards/**
 
+        - id: comments-service-route
+          uri: lb://CONTENT-SERVICE
+          predicates:
+            - Path=/api/v1/comments/**
+
         - id: tags-service-route
           uri: lb://CONTENT-SERVICE
           predicates:
@@ -42,27 +47,6 @@ spring:
           uri: lb://CONTENT-SERVICE
           predicates:
             - Path=/content-service/**
-
-#        # Social Service Routes
-#        - id: comments-service-route
-#          uri: lb://SOCIAL-SERVICE
-#          predicates:
-#            - Path=/api/v1/comments/**
-#
-#        - id: likes-service-route
-#          uri: lb://SOCIAL-SERVICE
-#          predicates:
-#            - Path=/api/v1/likes/**
-#
-#        - id: subscriptions-service-route
-#          uri: lb://SOCIAL-SERVICE
-#          predicates:
-#            - Path=/api/v1/subscriptions/**
-#
-#        - id: social-service-swagger
-#          uri: lb://SOCIAL-SERVICE
-#          predicates:
-#            - Path=/social-service/**
 
         # Chat Service Routes
         - id: chat-service-route
@@ -122,7 +106,7 @@ spring:
         - id: storage-service-route
           uri: lb://STORAGE-SERVICE
           predicates:
-            - Path=/api/v1/storage/**
+            - Path=/api/v1/images/**
 
         - id: storage-service-swagger
           uri: lb://STORAGE-SERVICE
