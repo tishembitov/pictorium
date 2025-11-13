@@ -15,14 +15,14 @@ import ru.tishembitov.pictorium.user.UserResponse;
 
 
 @RestController
-@RequestMapping("/api/v1/subscription")
+@RequestMapping("/api/v1/subscriptions")
 @RequiredArgsConstructor
 @Slf4j
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
-    @PostMapping("/{userIdToFollow}")
+    @PostMapping("/users/{userIdToFollow}")
     public ResponseEntity<SubscriptionResponse> followUser(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String userIdToFollow) {
@@ -31,7 +31,7 @@ public class SubscriptionController {
                 .body(subscriptionService.followUser(jwt.getSubject(), userIdToFollow));
     }
 
-    @DeleteMapping("/{userIdToUnfollow}")
+    @DeleteMapping("/users/{userIdToUnfollow}")
     public ResponseEntity<Void> unfollowUser(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String userIdToUnfollow) {
@@ -40,7 +40,7 @@ public class SubscriptionController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/check_user_follow/{userIdToCheck}")
+    @GetMapping("/check/{userIdToCheck}")
     public ResponseEntity<FollowCheckResponse> checkUserFollow(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String userIdToCheck) {
