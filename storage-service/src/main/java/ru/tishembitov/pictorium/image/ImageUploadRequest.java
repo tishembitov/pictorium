@@ -10,7 +10,7 @@ public class ImageUploadRequest {
     @NotNull(message = "File is required")
     private MultipartFile file;
 
-    private Category category;
+    private String category;
 
     private boolean generateThumbnail = false;
 
