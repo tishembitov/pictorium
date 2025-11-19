@@ -10,11 +10,13 @@ public class ImageUploadRequest {
     @NotNull(message = "File is required")
     private MultipartFile file;
 
-    private String category;
+    private String category = "PIN";
 
-    private boolean generateThumbnail = false;
+    private boolean generateThumbnail = true;
 
-    private Integer thumbnailWidth = 200;
+    private Integer thumbnailWidth = 400;
 
-    private Integer thumbnailHeight = 200;
+    private Integer thumbnailHeight = 400;
+
+    private String userId;
 }
