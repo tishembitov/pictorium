@@ -46,8 +46,11 @@ public class Comment {
     @Column(length = 400)
     private String content;
 
+    @Column(length = 100)
+    private String imageId;  // ID в storage-service
+
     @Column(length = 500)
-    private String imageUrl;
+    private String imageUrl;  // Кешированный URL для производительности
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
