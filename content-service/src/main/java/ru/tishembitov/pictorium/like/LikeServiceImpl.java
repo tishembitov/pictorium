@@ -6,10 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.comment.Comment;
-import ru.tishembitov.pictorium.comment.CommentMapper;
-import ru.tishembitov.pictorium.comment.CommentRepository;
-import ru.tishembitov.pictorium.comment.CommentResponse;
+import ru.tishembitov.pictorium.comment.*;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.pin.*;
 import ru.tishembitov.pictorium.util.SecurityUtils;
@@ -26,8 +23,8 @@ public class LikeServiceImpl implements LikeService {
     private final LikeRepository SavedPinRepository; // TODO: переименовать в savedPinRepository и использовать правильный тип
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
-    private final PinMapper pinMapper;
-    private final CommentMapper commentMapper;
+    private final PinService pinService;
+    private final CommentService commentService;
     private final LikeMapper likeMapper;
 
     @Override
@@ -41,14 +38,14 @@ public class LikeServiceImpl implements LikeService {
         boolean isSaved = SavedPinRepository.existsByUserIdAndPinId(userId, pinId);
 
         if (likeRepository.existsByUserIdAndPinId(userId, pinId)) {
-            return pinMapper.toResponse(pin, true, isSaved);
+            return  pinService.buildPinResponse(pin, true, isSaved);
         }
 
         Like like = likeMapper.toEntity(userId, pin);
         likeRepository.save(like);
         pinRepository.incrementLikeCount(pinId);
 
-        return pinMapper.toResponse(pin, true, isSaved);
+        return  pinService.buildPinResponse(pin, true, isSaved);
     }
 
     @Override
@@ -87,7 +84,7 @@ public class LikeServiceImpl implements LikeService {
                         "Comment with id " + commentId + " not found"));
 
         if (likeRepository.existsByUserIdAndCommentId(userId, commentId)) {
-            return commentMapper.toResponse(comment, true);
+            return commentService.buildCommentResponse(comment, true);
         }
 
         Like like = likeMapper.toEntity(userId, comment);
@@ -96,7 +93,7 @@ public class LikeServiceImpl implements LikeService {
 
         // TODO: Send notification if comment.getUserId() != userId
 
-        return commentMapper.toResponse(comment, true);
+        return commentService.buildCommentResponse(comment, true);
     }
 
     @Override
@@ -128,4 +125,5 @@ public class LikeServiceImpl implements LikeService {
 
         return likesPage.map(likeMapper::toResponse);
     }
+
 }

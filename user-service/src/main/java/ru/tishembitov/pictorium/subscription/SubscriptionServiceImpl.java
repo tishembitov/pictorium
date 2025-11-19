@@ -20,7 +20,7 @@ public class SubscriptionServiceImpl implements SubscriptionService{
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserService userService;
-    private final UserMapper userMapper;
+
     // private final UpdateService updateService; // Для создания уведомлений
 
     @Transactional
@@ -74,13 +74,13 @@ public class SubscriptionServiceImpl implements SubscriptionService{
         userService.validateUserExists(userId);
         Page<User> followersPage = subscriptionRepository.findFollowersByUserId(userId, pageable);
 
-        return userMapper.toResponseDtoPage(followersPage);
+        return followersPage.map(userService::buildUserResponse);
     }
 
     public Page<UserResponse> getFollowing(String userId, Pageable pageable) {
         userService.validateUserExists(userId);
         Page<User> followingPage = subscriptionRepository.findFollowingByUserId(userId, pageable);
 
-        return userMapper.toResponseDtoPage(followingPage);
+        return followingPage.map(userService::buildUserResponse);
     }
 }

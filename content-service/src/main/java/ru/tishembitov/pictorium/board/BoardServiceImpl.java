@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.tishembitov.pictorium.client.ImageUrlService;
 import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.pin.*;
@@ -24,7 +25,6 @@ public class BoardServiceImpl implements BoardService {
     private final BoardRepository boardRepository;
     private final PinRepository pinRepository;
     private final BoardMapper boardMapper;
-    private final PinMapper pinMapper;
     private final PinService pinService;
 
     public BoardResponse createBoard(BoardCreateRequest request) {
@@ -122,7 +122,7 @@ public class BoardServiceImpl implements BoardService {
                     pin.getId(),
                     PinInteractionDto.empty()
             );
-            return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
+            return pinService.buildPinResponse(pin, interaction.isLiked(), interaction.isSaved());
         });
     }
 
@@ -141,4 +141,5 @@ public class BoardServiceImpl implements BoardService {
             throw new AccessDeniedException("You don't have permission to modify this pin");
         }
     }
+
 }

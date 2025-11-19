@@ -187,7 +187,8 @@ public class CommentServiceImpl implements CommentService {
         }
     }
 
-    private CommentResponse buildCommentResponse(Comment comment, Boolean isLiked) {
+    @Override
+    public CommentResponse buildCommentResponse(Comment comment, Boolean isLiked) {
         String imageUrl = comment.getImageId() != null
                 ? imageUrlService.getImageUrl(comment.getImageId())
                 : null;

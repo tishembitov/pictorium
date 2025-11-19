@@ -6,8 +6,8 @@ import ru.tishembitov.pictorium.pin.Pin;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CommentMapper {
 
-    @Mapping(target = "pinId", source = "pin.id")
-    @Mapping(target = "parentCommentId", source = "parentComment.id")
+    @Mapping(target = "pinId", source = "comment.pin.id")
+    @Mapping(target = "parentCommentId", source = "comment.parentComment.id")
     @Mapping(target = "imageUrl", source = "imageUrl")
     @Mapping(target = "isLiked", constant = "false")
     CommentResponse toResponse(Comment comment, String imageUrl);

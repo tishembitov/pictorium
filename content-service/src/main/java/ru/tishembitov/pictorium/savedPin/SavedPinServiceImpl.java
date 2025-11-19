@@ -6,10 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.like.LikeRepository;
-import ru.tishembitov.pictorium.pin.Pin;
-import ru.tishembitov.pictorium.pin.PinMapper;
-import ru.tishembitov.pictorium.pin.PinRepository;
-import ru.tishembitov.pictorium.pin.PinResponse;
+import ru.tishembitov.pictorium.pin.*;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.UUID;
@@ -23,7 +20,7 @@ public class SavedPinServiceImpl implements SavedPinService {
     private final SavedPinRepository savedPinRepository;
     private final PinRepository pinRepository;
     private final LikeRepository likeRepository;
-    private final PinMapper pinMapper;
+    private final PinService pinService;
 
     @Override
     public PinResponse savePin(UUID pinId) {
@@ -35,7 +32,7 @@ public class SavedPinServiceImpl implements SavedPinService {
         boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pinId);
 
         if (savedPinRepository.existsByUserIdAndPinId(userId, pinId)) {
-            return pinMapper.toResponse(pin, isLiked, true);
+            return pinService.buildPinResponse(pin, isLiked, true);
         }
 
         SavedPin savedPin = SavedPin.builder()
@@ -46,7 +43,7 @@ public class SavedPinServiceImpl implements SavedPinService {
         savedPinRepository.save(savedPin);
         pinRepository.incrementSaveCount(pinId);
 
-        return pinMapper.toResponse(pin, isLiked, true);
+        return  pinService.buildPinResponse(pin, isLiked, true);
     }
 
     @Override

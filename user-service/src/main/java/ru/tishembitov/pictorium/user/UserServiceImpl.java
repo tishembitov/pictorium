@@ -93,7 +93,8 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
 
-    private UserResponse buildUserResponse(User user) {
+    @Override
+    public UserResponse buildUserResponse(User user) {
         String imageUrl = user.getImageId() != null
                 ? imageUrlService.getImageUrl(user.getImageId())
                 : null;

@@ -256,7 +256,8 @@ public class PinServiceImpl implements PinService {
         };
     }
 
-    private PinResponse buildPinResponse(Pin pin, Boolean isLiked, Boolean isSaved) {
+    @Override
+    public PinResponse buildPinResponse(Pin pin, Boolean isLiked, Boolean isSaved) {
         String imageUrl = imageUrlService.getImageUrl(pin.getImageId());
         String thumbnailUrl = pin.getThumbnailId() != null
                 ? imageUrlService.getImageUrl(pin.getThumbnailId())
