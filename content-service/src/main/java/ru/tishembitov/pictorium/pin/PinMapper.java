@@ -15,25 +15,38 @@ public interface PinMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "authorId", source = "userId")
+    @Mapping(target = "imageId", source = "request.imageId")
     @Mapping(target = "imageUrl", source = "request.imageUrl")
+    @Mapping(target = "thumbnailId", source = "request.thumbnailId")
+    @Mapping(target = "thumbnailUrl", source = "request.thumbnailUrl")
+    @Mapping(target = "videoPreviewId", source = "request.videoPreviewId")
     @Mapping(target = "videoPreviewUrl", source = "request.videoPreviewUrl")
+    @Mapping(target = "title", source = "request.title")
+    @Mapping(target = "description", source = "request.description")
+    @Mapping(target = "href", source = "request.href")
     @Mapping(target = "rgb", source = "request.rgb")
+    @Mapping(target = "width", source = "request.width")
+    @Mapping(target = "height", source = "request.height")
+    @Mapping(target = "fileSize", source = "request.fileSize")
+    @Mapping(target = "contentType", source = "request.contentType")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "saveCount", ignore = true)
+    @Mapping(target = "viewCount", ignore = true)
     Pin toEntity(String userId, PinCreateRequest request);
 
     @Mapping(target = "userId", source = "pin.authorId")
+    @Mapping(target = "imageUrl", source = "imageUrl")
+    @Mapping(target = "thumbnailUrl", source = "thumbnailUrl")
+    @Mapping(target = "videoPreviewUrl", source = "videoPreviewUrl")
     @Mapping(target = "tags", source = "pin.tags")
-    @Mapping(target = "saveCount", source = "pin.saveCount")
-    @Mapping(target = "commentCount", source = "pin.commentCount")
-    @Mapping(target = "likeCount", source = "pin.likeCount")
-    @Mapping(target = "isLiked", expression = "java(isLiked)")
-    @Mapping(target = "isSaved", expression = "java(isSaved)")
-    PinResponse toResponse(Pin pin, Boolean isLiked, Boolean isSaved);
+    @Mapping(target = "isLiked", source = "isLiked")
+    @Mapping(target = "isSaved", source = "isSaved")
+    PinResponse toResponse(Pin pin, String imageUrl, String thumbnailUrl, String videoPreviewUrl,
+                           Boolean isLiked, Boolean isSaved);
 
     default Set<String> mapTags(Set<Tag> tags) {
         if (tags == null) return Set.of();
@@ -45,14 +58,12 @@ public interface PinMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "authorId", ignore = true)
-    @Mapping(target = "imageUrl", source = "imageUrl")
-    @Mapping(target = "videoPreviewUrl", source = "videoPreviewUrl")
-    @Mapping(target = "rgb", source = "rgb")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "saveCount", ignore = true)
+    @Mapping(target = "viewCount", ignore = true)
     void updateEntity(@MappingTarget Pin pin, PinUpdateRequest request);
 }

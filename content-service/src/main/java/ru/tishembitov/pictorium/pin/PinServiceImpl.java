@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.tishembitov.pictorium.client.ImageUrlService;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
@@ -25,6 +26,7 @@ public class PinServiceImpl implements PinService {
     private final PinRepository pinRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
+    private final ImageUrlService imageUrlService;
     //TODO: реализовать обработку уведомлений и счетчика просмотров через события Kafka
     //TODO: сделать проверку прав доступа через репозиторий одним запросом
     @Override
@@ -34,7 +36,7 @@ public class PinServiceImpl implements PinService {
 
         PinInteractionDto interaction = getPinInteractionDto(pinId);
 
-        return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
+        return buildPinResponse(pin, interaction.isLiked(), interaction.isSaved());
     }
 
     @Override
@@ -64,7 +66,7 @@ public class PinServiceImpl implements PinService {
                     id,
                     PinInteractionDto.empty()
             );
-            return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
+            return buildPinResponse(pin, interaction.isLiked(), interaction.isSaved());
         });
     }
 
@@ -72,6 +74,9 @@ public class PinServiceImpl implements PinService {
     @Transactional
     public PinResponse createPin(PinCreateRequest request) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        imageUrlService.validateImageExists(request.imageId());
+
         Pin pin = pinMapper.toEntity(currentUserId, request);
 
         if (request.tags() != null && !request.tags().isEmpty()) {
@@ -79,19 +84,39 @@ public class PinServiceImpl implements PinService {
             pin.setTags(tags);
         }
 
-        pin = pinRepository.save(pin);
-        return pinMapper.toResponse(pin, false, false);
+        Pin saved = pinRepository.save(pin);
+
+        log.info("Pin created: {} by user: {}", saved.getId(), currentUserId);
+
+        return buildPinResponse(saved, false, false);
     }
 
     @Override
     @Transactional
     public PinResponse updatePin(UUID pinId, PinUpdateRequest request) {
-        Pin pin = pinRepository.findByIdWithTags(pinId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Pin with id " + pinId + " not found"));
-
         String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        Pin pin = pinRepository.findByIdWithTags(pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
+
         checkPinOwnership(pin, currentUserId);
+
+        if (request.imageId() != null && !request.imageId().equals(pin.getImageId())) {
+            imageUrlService.deleteImageSafely(pin.getImageId());
+            if (pin.getThumbnailId() != null) {
+                imageUrlService.deleteImageSafely(pin.getThumbnailId());
+            }
+
+            imageUrlService.validateImageExists(request.imageId());
+        }
+
+        if (request.videoPreviewId() != null && !request.videoPreviewId().equals(pin.getVideoPreviewId())) {
+            if (pin.getVideoPreviewId() != null) {
+                imageUrlService.deleteImageSafely(pin.getVideoPreviewId());
+            }
+
+            imageUrlService.validateImageExists(request.imageId());
+        }
 
         pinMapper.updateEntity(pin, request);
 
@@ -103,23 +128,37 @@ public class PinServiceImpl implements PinService {
             }
         }
 
-        pin = pinRepository.save(pin);
+        Pin updated = pinRepository.save(pin);
 
-        PinInteractionDto interaction = getPinInteractionDto(pinId);
+        Map<UUID, PinInteractionDto> interactions = getPinInteractionDtosBatch(Set.of(pinId));
+        PinInteractionDto interaction = interactions.getOrDefault(pinId, PinInteractionDto.empty());
 
-        return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
+        log.info("Pin updated: {}", pinId);
+
+        return buildPinResponse(updated, interaction.isLiked(), interaction.isSaved());
     }
 
     @Override
     @Transactional
     public void deletePin(UUID pinId) {
-        Pin pin = pinRepository.findById(pinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Pin with id " + pinId + " not found"));
-
         String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        Pin pin = pinRepository.findById(pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
+
         checkPinOwnership(pin, currentUserId);
 
+        imageUrlService.deleteImageSafely(pin.getImageId());
+        if (pin.getThumbnailId() != null) {
+            imageUrlService.deleteImageSafely(pin.getThumbnailId());
+        }
+        if (pin.getVideoPreviewId() != null) {
+            imageUrlService.deleteImageSafely(pin.getVideoPreviewId());
+        }
+
         pinRepository.delete(pin);
+
+        log.info("Pin deleted: {} by user: {}", pinId, currentUserId);
     }
 
 
@@ -215,5 +254,17 @@ public class PinServiceImpl implements PinService {
             }
             default -> filter;
         };
+    }
+
+    private PinResponse buildPinResponse(Pin pin, Boolean isLiked, Boolean isSaved) {
+        String imageUrl = imageUrlService.getImageUrl(pin.getImageId());
+        String thumbnailUrl = pin.getThumbnailId() != null
+                ? imageUrlService.getImageUrl(pin.getThumbnailId())
+                : null;
+        String videoPreviewUrl = pin.getVideoPreviewId() != null
+                ? imageUrlService.getImageUrl(pin.getVideoPreviewId())
+                : null;
+
+        return pinMapper.toResponse(pin, imageUrl, thumbnailUrl, videoPreviewUrl, isLiked, isSaved);
     }
 }

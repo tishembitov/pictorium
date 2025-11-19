@@ -4,23 +4,31 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
-public record PinResponse (
-     UUID id,
-     String userId,
-     String title,
-     String description,
-     String href,
-     String imageUrl,
-     String videoPreviewUrl,
-     String rgb,
-     String height,
-     Instant createdAt,
-     Instant updatedAt,
-     Set<String> tags,
+public record PinResponse(
+        UUID id,
+        String userId,
+        String title,
+        String description,
+        String href,
 
-     Boolean isLiked,
-     Boolean isSaved,
-     Integer saveCount,
-     Integer commentCount,
-     Integer likeCount
+        String imageUrl,
+        String thumbnailUrl,
+        String videoPreviewUrl,
+
+        String rgb,
+        Integer width,
+        Integer height,
+        Long fileSize,
+        String contentType,
+
+        Instant createdAt,
+        Instant updatedAt,
+        Set<String> tags,
+
+        Boolean isLiked,
+        Boolean isSaved,
+        Integer saveCount,
+        Integer commentCount,
+        Integer likeCount,
+        Integer viewCount
 ) {}

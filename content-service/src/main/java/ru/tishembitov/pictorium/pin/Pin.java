@@ -5,10 +5,6 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import ru.tishembitov.pictorium.board.Board;
-import ru.tishembitov.pictorium.comment.Comment;
-import ru.tishembitov.pictorium.like.Like;
-import ru.tishembitov.pictorium.savedPin.SavedPin;
 import ru.tishembitov.pictorium.tag.Tag;
 
 import java.time.Instant;
@@ -17,7 +13,10 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "pins")
+@Table(name = "pins", indexes = {
+        @Index(name = "idx_pins_author_created", columnList = "authorId, createdAt"),
+        @Index(name = "idx_pins_created", columnList = "createdAt")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,17 +41,39 @@ public class Pin {
     @Column(length = 200)
     private String href;
 
-    @Column(length = 500)
-    private String imageUrl;
+    @Column(nullable = false, length = 100)
+    private String imageId;  // ID в storage-service
 
-    @Column(length = 500)
+    @Column(length = 1000)
+    private String imageUrl;  // Кешированный URL для производительности
+
+    @Column(length = 100)
+    private String thumbnailId;
+
+    @Column(length = 1000)
+    private String thumbnailUrl;
+
+    @Column(length = 100)
+    private String videoPreviewId;
+
+    @Column(length = 1000)
     private String videoPreviewUrl;
 
-    @Column(length = 100)
-    private String rgb;
 
     @Column(length = 100)
-    private String height;
+    private String rgb;  // Доминантный цвет
+
+    @Column
+    private Integer width;
+
+    @Column
+    private Integer height;
+
+    @Column
+    private Long fileSize;
+
+    @Column(length = 50)
+    private String contentType;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -61,6 +82,7 @@ public class Pin {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
+
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
@@ -83,4 +105,7 @@ public class Pin {
     @Builder.Default
     private Integer saveCount = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer viewCount = 0;
 }
