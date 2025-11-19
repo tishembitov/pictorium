@@ -1,7 +1,6 @@
 package ru.tishembitov.pictorium.user;
 
 import org.mapstruct.*;
-import org.springframework.data.domain.Page;
 
 @Mapper(
         componentModel = "spring",
@@ -10,15 +9,14 @@ import org.springframework.data.domain.Page;
 )
 public interface UserMapper {
 
-    UserResponse toResponseDto(User user);
+    @Mapping(target = "imageUrl", source = "imageUrl")
+    @Mapping(target = "bannerImageUrl", source = "bannerImageUrl")
+    UserResponse toResponseDto(User user, String imageUrl, String bannerImageUrl);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
-    @Mapping(target = "imageUrl", ignore = true)
-    @Mapping(target = "bannerImageUrl", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "recommendationCreatedAt", ignore = true)
     void updateUserFromUpdateDto(UserUpdateRequest userUpdateRequest, @MappingTarget User user);
-
-    default Page<UserResponse> toResponseDtoPage(Page<User> userPage) {
-        return userPage.map(this::toResponseDto);
-    }
 }

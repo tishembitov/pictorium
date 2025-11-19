@@ -28,20 +28,33 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    private String imageUrl;
+    @Column(length = 100)
+    private String imageId;  // ID в storage-service
 
-    private String bannerImageUrl;
+    @Column(length = 500)
+    private String imageUrl;  // Кешированный URL для производительности
 
+    @Column(length = 100)
+    private String bannerImageId;  // ID в storage-service
+
+    @Column(length = 500)
+    private String bannerImageUrl;  // Кешированный URL для производительности
+
+    @Column(length = 200)
     private String description;
 
     private Instant recommendationCreatedAt;
 
+    @Column(length = 100)
     private String instagram;
 
+    @Column(length = 100)
     private String tiktok;
 
+    @Column(length = 100)
     private String telegram;
 
+    @Column(length = 100)
     private String pinterest;
 
     @CreatedDate
@@ -51,5 +64,4 @@ public class User {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
-
 }
