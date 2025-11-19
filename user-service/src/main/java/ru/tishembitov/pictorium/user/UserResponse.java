@@ -13,7 +13,6 @@ public record UserResponse(
      String instagram,
      String tiktok,
      String telegram,
-     String pinterest,
-     UUID selectedBoardId
+     String pinterest
 ) {
 }
