@@ -1,0 +1,51 @@
+/* keycloak/themes/pictorium/login/resources/css/styles.css */
+
+:root {
+    --pictorium-red: #e60023;
+    --pictorium-red-hover: #ad081b;
+}
+
+/* Фон страницы */
+.login-pf body {
+    background: linear-gradient(135deg, #fef7f7 0%, #fff5f5 100%);
+}
+
+/* Карточка логина */
+#kc-login,
+.card-pf {
+    background: white;
+    border-radius: 32px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 32px;
+}
+
+/* Кнопка входа */
+#kc-login input[type="submit"],
+.pf-c-button.pf-m-primary {
+    background: var(--pictorium-red) !important;
+    border: none !important;
+    border-radius: 24px !important;
+    padding: 16px !important;
+    font-weight: 600 !important;
+    width: 100%;
+}
+
+#kc-login input[type="submit"]:hover {
+    background: var(--pictorium-red-hover) !important;
+}
+
+/* Поля ввода */
+.pf-c-form-control,
+input[type="text"],
+input[type="password"] {
+    border-radius: 16px !important;
+    padding: 14px !important;
+    border: 2px solid #efefef !important;
+}
+
+input:focus {
+    border-color: var(--pictorium-red) !important;
+    box-shadow: 0 0 0 3px rgba(230, 0, 35, 0.1) !important;
+}
