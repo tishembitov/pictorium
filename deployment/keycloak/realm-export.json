@@ -1369,7 +1369,7 @@
     "authType" : "basic",
     "user" : ""
   },
-  "loginTheme" : "keycloak",
+  "loginTheme": "pictorium",
   "accountTheme" : "keycloak.v3",
   "adminTheme" : "keycloak.v2",
   "emailTheme" : "keycloak",

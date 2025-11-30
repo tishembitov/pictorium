@@ -27,6 +27,11 @@ services:
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak123}
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT: false
+    volumes:
+      - ./keycloak/themes/pictorium:/opt/keycloak/themes/pictorium:ro
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro
     ports:
       - "9090:8080"
     depends_on:
@@ -34,7 +39,9 @@ services:
         condition: service_healthy
     networks:
       - pictorium-network
-    command: start-dev
+    command:
+      - start-dev
+      - --import-realm
     restart: unless-stopped
 
   content-service-db:
