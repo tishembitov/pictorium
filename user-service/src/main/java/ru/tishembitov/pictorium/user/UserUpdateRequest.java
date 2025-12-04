@@ -10,11 +10,11 @@ public record UserUpdateRequest(
         @Size(max = 200, message = "Description must not exceed 200 characters")
         String description,
 
+        @Size(max = 64)
         String imageId,
-        String imageUrl,
 
+        @Size(max = 64)
         String bannerImageId,
-        String bannerImageUrl,
 
         @Size(max = 100, message = "Instagram link must not exceed 100 characters")
         String instagram,

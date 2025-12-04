@@ -1,22 +1,22 @@
 package ru.tishembitov.pictorium.image;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.InputStream;
 import java.util.List;
 
 public interface ImageService {
 
-    ImageUploadResponse uploadImage(ImageUploadRequest request);
+    PresignedUploadResponse generatePresignedUploadUrl(PresignedUploadRequest request);
 
-    InputStream getImage(String imageId);
+    ConfirmUploadResponse confirmUpload(ConfirmUploadRequest request);
+
+    ImageUrlResponse getImageUrl(String imageId, Integer expirySeconds);
 
     ImageMetadata getImageMetadata(String imageId);
-
-    String getImageUrl(String imageId, Integer expirySeconds);
 
     void deleteImage(String imageId);
 
     List<ImageMetadata> listImagesByCategory(String category);
+
+    InputStream downloadImage(String imageId);
 }
 

@@ -31,14 +31,9 @@ public class User {
     @Column(length = 100)
     private String imageId;  // ID в storage-service
 
-    @Column(length = 500)
-    private String imageUrl;  // Кешированный URL для производительности
 
     @Column(length = 100)
     private String bannerImageId;  // ID в storage-service
-
-    @Column(length = 500)
-    private String bannerImageUrl;  // Кешированный URL для производительности
 
     @Column(length = 200)
     private String description;

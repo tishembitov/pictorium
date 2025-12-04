@@ -1,22 +1,41 @@
+# config-server/src/main/resources/configurations/storage-service.yml
+
 spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/storage}
+    username: ${SPRING_DATASOURCE_USERNAME:username}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
   servlet:
     multipart:
       enabled: true
       max-file-size: 10MB
       max-request-size: 50MB
-      file-size-threshold: 2MB
 
 minio:
-  endpoint: http://localhost:9000
-  bucketName: images
-  thumbnailBucket: thumbnails
-  accessKey: admin
-  secretKey: your-secure-password
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  bucketName: ${MINIO_BUCKET:images}
+  thumbnailBucket: ${MINIO_THUMBNAIL_BUCKET:thumbnails}
+  accessKey: ${MINIO_ACCESS_KEY:admin}
+  secretKey: ${MINIO_SECRET_KEY:your-secure-password}
 
 image-storage:
   max-file-size: 10485760  # 10MB
   allowed-content-types: image/jpeg,image/jpg,image/png,image/gif,image/webp
-  url-expiry-days: 7
+  presigned-url-expiry-minutes: 15
+  download-url-expiry-hours: 24
+  cleanup:
+    enabled: true
+    interval-ms: 3600000  # 1 hour
+    pending-expiry-hours: 2
 
 server:
   port: 8088

@@ -14,6 +14,4 @@ public interface UserService {
 
     void validateUserExists(String userId);
 
-    UserResponse buildUserResponse(User user);
-
 }

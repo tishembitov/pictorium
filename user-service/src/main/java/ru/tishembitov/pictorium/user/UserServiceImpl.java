@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.client.ImageUrlService;
+import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.UsernameAlreadyExistsException;
 import ru.tishembitov.pictorium.exception.UserNotFoundException;
+
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -15,94 +17,66 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final ImageUrlService imageUrlService;
+    private final ImageService imageService;
 
     @Override
     public UserResponse getUserById(String userId) {
-        log.info("Fetching user by ID: {}", userId);
-        User user = getUserByIdOrThrow(userId);
-        return buildUserResponse(user);
+        return userMapper.toResponse(getUserByIdOrThrow(userId));
     }
 
     @Override
     public UserResponse getUserByUsername(String username) {
-        log.info("Fetching user by username: {}", username);
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
-        return buildUserResponse(user);
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        return userMapper.toResponse(user);
     }
 
     @Override
     @Transactional
-    public UserResponse updateUser(String id, UserUpdateRequest userUpdateRequest) {
+    public UserResponse updateUser(String id, UserUpdateRequest request) {
         User user = getUserByIdOrThrow(id);
 
-        if (userUpdateRequest.username() != null && !userUpdateRequest.username().equals(user.getUsername())) {
-            if (userRepository.existsByUsername(userUpdateRequest.username())) {
-                throw new UsernameAlreadyExistsException("Username '" + userUpdateRequest.username() + "' is already taken");
+        if (request.username() != null && !request.username().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(request.username())) {
+                throw new UsernameAlreadyExistsException("Username taken: " + request.username());
             }
         }
 
-        if (userUpdateRequest.imageId() != null && !userUpdateRequest.imageId().equals(user.getImageId())) {
-            if (user.getImageId() != null && !user.getImageId().isBlank()) {
-                imageUrlService.deleteImageSafely(user.getImageId());
-            }
+        handleImageUpdate(request.imageId(), user.getImageId(), user::setImageId);
+        handleImageUpdate(request.bannerImageId(), user.getBannerImageId(), user::setBannerImageId);
 
-            if (!userUpdateRequest.imageId().isBlank()) {
-                imageUrlService.validateImageExists(userUpdateRequest.imageId());
-                user.setImageId(userUpdateRequest.imageId());
-                user.setImageUrl(userUpdateRequest.imageUrl());
-            } else {
-                user.setImageId(null);
-                user.setImageUrl(null);
-            }
-        }
+        userMapper.updateFromRequest(request, user);
 
-        if (userUpdateRequest.bannerImageId() != null && !userUpdateRequest.bannerImageId().equals(user.getBannerImageId())) {
-            if (user.getBannerImageId() != null && !user.getBannerImageId().isBlank()) {
-                imageUrlService.deleteImageSafely(user.getBannerImageId());
-            }
-
-            if (!userUpdateRequest.bannerImageId().isBlank()) {
-                imageUrlService.validateImageExists(userUpdateRequest.bannerImageId());
-                user.setBannerImageId(userUpdateRequest.bannerImageId());
-                user.setBannerImageUrl(userUpdateRequest.bannerImageUrl());
-            } else {
-                user.setBannerImageId(null);
-                user.setBannerImageUrl(null);
-            }
-        }
-
-        userMapper.updateUserFromUpdateDto(userUpdateRequest, user);
-        User updatedUser = userRepository.save(user);
-
-        log.info("User updated successfully: {}", id);
-        return buildUserResponse(updatedUser);
+        return userMapper.toResponse(userRepository.save(user));
     }
 
-    @Override
-    public void validateUserExists(String id) {
-        if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("User not found with ID: " + id);
+    private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {
+        if (newId == null) {
+            return;
+        }
+
+        if (newId.isBlank()) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(null);
+            return;
+        }
+
+        if (!newId.equals(currentId)) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(newId);
         }
     }
 
     @Override
     public User getUserByIdOrThrow(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
     }
 
     @Override
-    public UserResponse buildUserResponse(User user) {
-        String imageUrl = user.getImageId() != null
-                ? imageUrlService.getImageUrl(user.getImageId())
-                : null;
-
-        String bannerImageUrl = user.getBannerImageId() != null
-                ? imageUrlService.getImageUrl(user.getBannerImageId())
-                : null;
-
-        return userMapper.toResponseDto(user, imageUrl, bannerImageUrl);
+    public void validateUserExists(String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException("User not found: " + userId);
+        }
     }
 }
