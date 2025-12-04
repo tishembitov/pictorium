@@ -17,6 +17,4 @@ public class ImageUploadRequest {
     private Integer thumbnailWidth = 400;
 
     private Integer thumbnailHeight = 400;
-
-    private String userId;
 }

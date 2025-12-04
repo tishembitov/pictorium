@@ -1,7 +1,5 @@
 package ru.tishembitov.pictorium.user;
 
-import java.util.UUID;
-
 public record UserResponse(
 
      String id,
