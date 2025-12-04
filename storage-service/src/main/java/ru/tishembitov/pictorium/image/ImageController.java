@@ -4,11 +4,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 
@@ -54,16 +54,21 @@ public class ImageController {
             @PathVariable String imageId,
             HttpServletResponse response) {
 
-        try {
-            InputStream imageStream = imageService.downloadImage(imageId);
+        try (InputStream imageStream = imageService.downloadImage(imageId)) {
             ImageMetadata metadata = imageService.getImageMetadata(imageId);
 
             response.setContentType(metadata.getContentType());
             response.setHeader("Content-Disposition",
                     "inline; filename=\"" + metadata.getFileName() + "\"");
 
-            IOUtils.copy(imageStream, response.getOutputStream());
-            response.flushBuffer();
+            if (metadata.getSize() != null) {
+                response.setContentLengthLong(metadata.getSize());
+            }
+
+            // ← ИСПРАВЛЕНО: использование стандартного метода transferTo (Java 9+)
+            OutputStream outputStream = response.getOutputStream();
+            imageStream.transferTo(outputStream);
+            outputStream.flush();
 
         } catch (Exception e) {
             log.error("Error downloading image: {}", imageId, e);

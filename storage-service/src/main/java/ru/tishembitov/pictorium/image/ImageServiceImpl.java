@@ -26,7 +26,7 @@ public class ImageServiceImpl implements ImageService {
 
     private final MinioClient minioClient;
     private final MinioConfig minioConfig;
-    private final ImageRepository ImageRepository;
+    private final ImageRepository imageRepository;
 
     @Value("${image-storage.max-file-size:10485760}")
     private Long maxFileSize;
@@ -103,10 +103,10 @@ public class ImageServiceImpl implements ImageService {
                         .status(Image.ImageStatus.PENDING)
                         .build();
 
-                ImageRepository.save(thumbnailRecord);
+                imageRepository.save(thumbnailRecord);
             }
 
-            ImageRepository.save(record);
+            imageRepository.save(record);
 
             long expiresAt = System.currentTimeMillis() +
                     (presignedUploadExpiryMinutes * 60 * 1000L);
@@ -135,7 +135,7 @@ public class ImageServiceImpl implements ImageService {
     @Override
     @Transactional
     public ConfirmUploadResponse confirmUpload(ConfirmUploadRequest request) {
-        Image record = ImageRepository.findById(request.getImageId())
+        Image record = imageRepository.findById(request.getImageId())
                 .orElseThrow(() -> new ImageNotFoundException("Image record not found: " + request.getImageId()));
 
         if (record.getStatus() == Image.ImageStatus.CONFIRMED) {
@@ -171,7 +171,7 @@ public class ImageServiceImpl implements ImageService {
                 confirmThumbnail(record.getThumbnailImageId());
             }
 
-            ImageRepository.save(record);
+            imageRepository.save(record);
 
             log.info("Upload confirmed for imageId: {}", request.getImageId());
 
@@ -239,7 +239,7 @@ public class ImageServiceImpl implements ImageService {
     @Override
     @Transactional
     public void deleteImage(String imageId) {
-        Image record = ImageRepository.findById(imageId)
+        Image record = imageRepository.findById(imageId)
                 .orElseThrow(() -> new ImageNotFoundException("Image not found: " + imageId));
 
         try {
@@ -258,7 +258,7 @@ public class ImageServiceImpl implements ImageService {
 
             // Помечаем как удалённую
             record.setStatus(Image.ImageStatus.DELETED);
-            ImageRepository.save(record);
+            imageRepository.save(record);
 
             log.info("Image deleted: {}", imageId);
 
@@ -271,8 +271,8 @@ public class ImageServiceImpl implements ImageService {
     @Override
     public List<ImageMetadata> listImagesByCategory(String category) {
         List<Image> records = category != null
-                ? ImageRepository.findByCategoryAndStatus(category, Image.ImageStatus.CONFIRMED)
-                : ImageRepository.findAll().stream()
+                ? imageRepository.findByCategoryAndStatus(category, Image.ImageStatus.CONFIRMED)
+                : imageRepository.findAll().stream()
                 .filter(r -> r.getStatus() == Image.ImageStatus.CONFIRMED)
                 .toList();
 
@@ -342,21 +342,21 @@ public class ImageServiceImpl implements ImageService {
     }
 
     private Image getConfirmedImage(String imageId) {
-        return ImageRepository.findByIdAndStatus(imageId, Image.ImageStatus.CONFIRMED)
+        return imageRepository.findByIdAndStatus(imageId, Image.ImageStatus.CONFIRMED)
                 .orElseThrow(() -> new ImageNotFoundException("Confirmed image not found: " + imageId));
     }
 
     private void confirmThumbnail(String thumbnailImageId) {
-        ImageRepository.findById(thumbnailImageId)
+        imageRepository.findById(thumbnailImageId)
                 .ifPresent(thumbnail -> {
                     thumbnail.setStatus(Image.ImageStatus.CONFIRMED);
                     thumbnail.setConfirmedAt(Instant.now());
-                    ImageRepository.save(thumbnail);
+                    imageRepository.save(thumbnail);
                 });
     }
 
     private void deleteThumbnail(String thumbnailImageId) {
-        ImageRepository.findById(thumbnailImageId)
+        imageRepository.findById(thumbnailImageId)
                 .ifPresent(thumbnail -> {
                     try {
                         minioClient.removeObject(
@@ -366,7 +366,7 @@ public class ImageServiceImpl implements ImageService {
                                         .build()
                         );
                         thumbnail.setStatus(Image.ImageStatus.DELETED);
-                        ImageRepository.save(thumbnail);
+                        imageRepository.save(thumbnail);
                     } catch (Exception e) {
                         log.warn("Failed to delete thumbnail: {}", thumbnailImageId, e);
                     }

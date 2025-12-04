@@ -18,13 +18,13 @@ import java.util.*;
 @ConditionalOnProperty(name = "image-storage.cleanup.enabled", havingValue = "true", matchIfMissing = true)
 public class ImageCleanupScheduler {
 
-    private final ImageRepository imageRepository;
+    private final ImageRepository imageRepository; // ← camelCase
     private final MinioClient minioClient;
 
     @Value("${image-storage.cleanup.pending-expiry-hours:2}")
     private int pendingExpiryHours;
 
-    @Scheduled(fixedDelayString = "${image-storage.cleanup.interval-ms:3600000}") // Default: 1 hour
+    @Scheduled(fixedDelayString = "${image-storage.cleanup.interval-ms:3600000}")
     @Transactional
     public void cleanupExpiredPendingUploads() {
         Instant threshold = Instant.now().minus(pendingExpiryHours, ChronoUnit.HOURS);
@@ -36,7 +36,6 @@ public class ImageCleanupScheduler {
 
         for (Image record : expiredRecords) {
             try {
-                // Пытаемся удалить из MinIO (на случай если частично загружено)
                 try {
                     minioClient.removeObject(
                             RemoveObjectArgs.builder()
@@ -45,7 +44,7 @@ public class ImageCleanupScheduler {
                                     .build()
                     );
                 } catch (Exception e) {
-                    // Игнорируем - файла может не быть
+                    log.debug("Object not found in MinIO, skipping: {}", record.getObjectName());
                 }
 
                 record.setStatus(Image.ImageStatus.EXPIRED);
