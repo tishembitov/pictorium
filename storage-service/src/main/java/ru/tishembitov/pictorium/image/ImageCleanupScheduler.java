@@ -18,7 +18,7 @@ import java.util.*;
 @ConditionalOnProperty(name = "image-storage.cleanup.enabled", havingValue = "true", matchIfMissing = true)
 public class ImageCleanupScheduler {
 
-    private final ImageRepository imageRecordRepository;
+    private final ImageRepository imageRepository;
     private final MinioClient minioClient;
 
     @Value("${image-storage.cleanup.pending-expiry-hours:2}")
@@ -29,7 +29,7 @@ public class ImageCleanupScheduler {
     public void cleanupExpiredPendingUploads() {
         Instant threshold = Instant.now().minus(pendingExpiryHours, ChronoUnit.HOURS);
 
-        List<Image> expiredRecords = imageRecordRepository
+        List<Image> expiredRecords = imageRepository
                 .findExpiredPendingUploads(Image.ImageStatus.PENDING, threshold);
 
         log.info("Found {} expired pending uploads to cleanup", expiredRecords.size());
@@ -49,7 +49,7 @@ public class ImageCleanupScheduler {
                 }
 
                 record.setStatus(Image.ImageStatus.EXPIRED);
-                imageRecordRepository.save(record);
+                imageRepository.save(record);
 
                 log.debug("Marked as expired: {}", record.getId());
 

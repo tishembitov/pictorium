@@ -13,9 +13,9 @@ import java.util.Optional;
 @Repository
 public interface ImageRepository extends JpaRepository<Image, String> {
 
-    Optional<Image> findByImageId(String imageId);
+    Optional<Image> findById(String imageId);
 
-    Optional<Image> findByImageIdAndStatus(String imageId, Image.ImageStatus status);
+    Optional<Image> findByIdAndStatus(String imageId, Image.ImageStatus status);
 
     List<Image> findByCategory(String category);
 
@@ -27,5 +27,5 @@ public interface ImageRepository extends JpaRepository<Image, String> {
             @Param("threshold") Instant threshold
     );
 
-    boolean existsByImageIdAndStatus(String imageId, Image.ImageStatus status);
+    boolean existsByIdAndStatus(String imageId, Image.ImageStatus status);
 }

@@ -135,7 +135,7 @@ public class ImageServiceImpl implements ImageService {
     @Override
     @Transactional
     public ConfirmUploadResponse confirmUpload(ConfirmUploadRequest request) {
-        Image record = ImageRepository.findByImageId(request.getImageId())
+        Image record = ImageRepository.findById(request.getImageId())
                 .orElseThrow(() -> new ImageNotFoundException("Image record not found: " + request.getImageId()));
 
         if (record.getStatus() == Image.ImageStatus.CONFIRMED) {
@@ -239,7 +239,7 @@ public class ImageServiceImpl implements ImageService {
     @Override
     @Transactional
     public void deleteImage(String imageId) {
-        Image record = ImageRepository.findByImageId(imageId)
+        Image record = ImageRepository.findById(imageId)
                 .orElseThrow(() -> new ImageNotFoundException("Image not found: " + imageId));
 
         try {
@@ -342,12 +342,12 @@ public class ImageServiceImpl implements ImageService {
     }
 
     private Image getConfirmedImage(String imageId) {
-        return ImageRepository.findByImageIdAndStatus(imageId, Image.ImageStatus.CONFIRMED)
+        return ImageRepository.findByIdAndStatus(imageId, Image.ImageStatus.CONFIRMED)
                 .orElseThrow(() -> new ImageNotFoundException("Confirmed image not found: " + imageId));
     }
 
     private void confirmThumbnail(String thumbnailImageId) {
-        ImageRepository.findByImageId(thumbnailImageId)
+        ImageRepository.findById(thumbnailImageId)
                 .ifPresent(thumbnail -> {
                     thumbnail.setStatus(Image.ImageStatus.CONFIRMED);
                     thumbnail.setConfirmedAt(Instant.now());
@@ -356,7 +356,7 @@ public class ImageServiceImpl implements ImageService {
     }
 
     private void deleteThumbnail(String thumbnailImageId) {
-        ImageRepository.findByImageId(thumbnailImageId)
+        ImageRepository.findById(thumbnailImageId)
                 .ifPresent(thumbnail -> {
                     try {
                         minioClient.removeObject(

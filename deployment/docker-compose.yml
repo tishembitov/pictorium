@@ -84,6 +84,26 @@ services:
       retries: 5
     restart: unless-stopped
 
+  storage-service-db:
+    container_name: storage-service-db
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: storage
+      POSTGRES_USER: ${STORAGE_DB_USER:-username}
+      POSTGRES_PASSWORD: ${STORAGE_DB_PASSWORD:-password}
+    ports:
+      - "5434:5432"
+    volumes:
+      - storage_db_data:/var/lib/postgresql
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${STORAGE_DB_USER:-username}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   minio:
     container_name: minio-storage
     image: minio/minio:latest
@@ -116,6 +136,8 @@ volumes:
   content_db_data:
     driver: local
   user_db_data:
+    driver: local
+  storage_db_data:
     driver: local
   minio_data:
     driver: local

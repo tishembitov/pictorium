@@ -10,11 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 
 @Entity
-@Table(name = "image_records", indexes = {
-        @Index(name = "idx_image_id", columnList = "imageId"),
-        @Index(name = "idx_category", columnList = "category"),
-        @Index(name = "idx_status", columnList = "status")
-})
+@Table(name = "image")
 @Getter
 @Setter
 @NoArgsConstructor
