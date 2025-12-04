@@ -1,41 +1,47 @@
 services:
-  keycloak-db:
-    container_name: keycloak-db
+  # ========== ЕДИНАЯ БАЗА ДАННЫХ ==========
+  postgres:
+    container_name: pictorium-postgres
     image: postgres:latest
     environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-keycloak123}
+      POSTGRES_USER: ${POSTGRES_USER:-username}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: pictorium
     volumes:
-      - keycloak_db_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
     networks:
       - pictorium-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      # Исправлено: используем правильного пользователя
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-username} -d pictorium"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
+  # ========== KEYCLOAK ==========
   keycloak:
     container_name: keycloak
     image: quay.io/keycloak/keycloak:26.2.5
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak123}
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
-      KC_HTTP_ENABLED: true
-      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
     volumes:
       - ./keycloak/themes/pictorium:/opt/keycloak/themes/pictorium:ro
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro
     ports:
       - "9090:8080"
     depends_on:
-      keycloak-db:
+      postgres:
         condition: service_healthy
     networks:
       - pictorium-network
@@ -44,79 +50,20 @@ services:
       - --import-realm
     restart: unless-stopped
 
-  content-service-db:
-    container_name: content-service-db
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: content
-      POSTGRES_USER: ${CONTENT_DB_USER:-username}
-      POSTGRES_PASSWORD: ${CONTENT_DB_PASSWORD:-password}
-    ports:
-      - "5433:5432"
-    volumes:
-      - content_db_data:/var/lib/postgresql
-    networks:
-      - pictorium-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${CONTENT_DB_USER:-username}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  user-service-db:
-    container_name: user-service-db
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: users
-      POSTGRES_USER: ${USER_DB_USER:-username}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-password}
-    ports:
-      - "5432:5432"
-    volumes:
-      - user_db_data:/var/lib/postgresql
-    networks:
-      - pictorium-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER:-username}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  storage-service-db:
-    container_name: storage-service-db
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: storage
-      POSTGRES_USER: ${STORAGE_DB_USER:-username}
-      POSTGRES_PASSWORD: ${STORAGE_DB_PASSWORD:-password}
-    ports:
-      - "5434:5432"
-    volumes:
-      - storage_db_data:/var/lib/postgresql
-    networks:
-      - pictorium-network
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${STORAGE_DB_USER:-username}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
+  # ========== MINIO ==========
   minio:
     container_name: minio-storage
     image: minio/minio:latest
     restart: always
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-your-secure-password}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"  # API
-      - "9001:9001"  # Console
+      - "9000:9000"
+      - "9001:9001"
     networks:
       - pictorium-network
     command: server /data --console-address ":9001"
@@ -131,13 +78,7 @@ networks:
     driver: bridge
 
 volumes:
-  keycloak_db_data:
-    driver: local
-  content_db_data:
-    driver: local
-  user_db_data:
-    driver: local
-  storage_db_data:
+  postgres_data:
     driver: local
   minio_data:
     driver: local
