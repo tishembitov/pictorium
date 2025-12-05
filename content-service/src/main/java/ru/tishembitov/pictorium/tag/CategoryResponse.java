@@ -9,7 +9,8 @@ public record CategoryResponse(
 ) {
     public record PinPreview(
             UUID id,
-            String imageUrl,
-            String videoPreviewUrl
+            String imageId,
+            String thumbnailId,
+            String videoPreviewId
     ) {}
 }

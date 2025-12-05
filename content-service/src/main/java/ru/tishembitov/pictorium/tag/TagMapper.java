@@ -18,8 +18,9 @@ public interface TagMapper {
     List<TagResponse> toResponseList(List<Tag> tags);
 
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "imageUrl", source = "imageUrl")
-    @Mapping(target = "videoPreviewUrl", source = "videoPreviewUrl")
+    @Mapping(target = "imageId", source = "imageId")
+    @Mapping(target = "thumbnailId", source = "thumbnailId")
+    @Mapping(target = "videoPreviewId", source = "videoPreviewId")
     CategoryResponse.PinPreview toPinPreview(Pin pin);
 
     @Mapping(target = "tagId", source = "tag.id")
