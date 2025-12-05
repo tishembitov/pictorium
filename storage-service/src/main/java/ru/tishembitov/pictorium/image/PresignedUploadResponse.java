@@ -17,8 +17,5 @@ public class PresignedUploadResponse {
     private String uploadUrl;
     private Long expiresAt;
     private Map<String, String> requiredHeaders;
-
     private String thumbnailImageId;
-    private String thumbnailUploadUrl;
-    private String thumbnailObjectName;
 }
