@@ -1,5 +1,3 @@
-// storage-service/src/main/java/ru/tishembitov/pictorium/image/ImageServiceImpl.java
-
 package ru.tishembitov.pictorium.image;
 
 import io.minio.*;
@@ -10,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.config.MinioConfig;
+import ru.tishembitov.pictorium.config.MinioProperties;
 import ru.tishembitov.pictorium.exception.ImageNotFoundException;
 import ru.tishembitov.pictorium.exception.ImageStorageException;
 
@@ -26,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class ImageServiceImpl implements ImageService {
 
     private final MinioClient minioClient;
-    private final MinioConfig minioConfig;
+    private final MinioProperties minioProperties;
     private final ImageRepository imageRepository;
     private final ImageMapper imageMapper;
 
@@ -52,25 +50,25 @@ public class ImageServiceImpl implements ImageService {
         String objectName = buildObjectName(imageId, request.getCategory(), extension);
 
         try {
-            String uploadUrl = generatePresignedPutUrl(minioConfig.getBucketName(), objectName);
+            String uploadUrl = generatePresignedPutUrl(minioProperties.getBucketName(), objectName);
 
             Image record = imageMapper.toImageEntity(
                     request,
                     imageId,
                     objectName,
-                    minioConfig.getBucketName()
+                    minioProperties.getBucketName()
             );
 
             String thumbnailImageId = null;
             String thumbnailUploadUrl = null;
             String thumbnailObjectName = null;
 
-            if (request.isGenerateThumbnail() && minioConfig.getThumbnailBucket() != null) {
+            if (request.isGenerateThumbnail() && minioProperties.getThumbnailBucket() != null) {
                 thumbnailImageId = generateImageId();
                 thumbnailObjectName = buildObjectName(thumbnailImageId, request.getCategory(), "jpg");
 
                 thumbnailUploadUrl = generatePresignedPutUrl(
-                        minioConfig.getThumbnailBucket(),
+                        minioProperties.getThumbnailBucket(),
                         thumbnailObjectName
                 );
 
@@ -80,7 +78,7 @@ public class ImageServiceImpl implements ImageService {
                         request,
                         thumbnailImageId,
                         thumbnailObjectName,
-                        minioConfig.getThumbnailBucket()
+                        minioProperties.getThumbnailBucket()
                 );
 
                 imageRepository.save(thumbnailRecord);
