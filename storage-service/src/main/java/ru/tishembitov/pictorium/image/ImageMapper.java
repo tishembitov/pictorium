@@ -4,6 +4,7 @@ import org.mapstruct.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Mapper(
         componentModel = "spring",
@@ -51,10 +52,10 @@ public interface ImageMapper {
     );
 
     @Mapping(target = "imageId", source = "id")
-    @Mapping(target = "lastModified", expression = "java(getLastModifiedMillis(image))")
+    @Mapping(target = "size", source = "fileSize")
+    @Mapping(target = "updatedAt", source = "updatedAt")
     @Mapping(target = "etag", ignore = true)
     ImageMetadata toImageMetadata(Image image);
-
 
     List<ImageMetadata> toImageMetadataList(List<Image> images);
 
@@ -64,7 +65,7 @@ public interface ImageMapper {
     @Mapping(target = "fileName", source = "image.fileName")
     @Mapping(target = "size", source = "image.fileSize")
     @Mapping(target = "contentType", source = "image.contentType")
-    @Mapping(target = "uploadTimestamp", expression = "java(getUploadTimestamp(image))")
+    @Mapping(target = "updatedAt", source = "image.updatedAt")  // ← Добавлено
     @Mapping(target = "confirmed", source = "confirmed")
     ConfirmUploadResponse toConfirmUploadResponse(
             Image image,
@@ -84,7 +85,7 @@ public interface ImageMapper {
             String imageId,
             String uploadUrl,
             Long expiresAt,
-            java.util.Map<String, String> requiredHeaders,
+            Map<String, String> requiredHeaders,
             String thumbnailImageId,
             String thumbnailUploadUrl,
             String thumbnailObjectName
@@ -94,7 +95,6 @@ public interface ImageMapper {
     @Mapping(target = "url", source = "url")
     @Mapping(target = "expiresAt", source = "expiresAt")
     ImageUrlResponse toImageUrlResponse(String imageId, String url, Long expiresAt);
-
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "objectName", ignore = true)

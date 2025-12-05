@@ -3,6 +3,8 @@ package ru.tishembitov.pictorium.image;
 import lombok.*;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,6 +17,6 @@ public class ConfirmUploadResponse {
     private String fileName;
     private Long size;
     private String contentType;
-    private Long uploadTimestamp;
+    private Instant updatedAt;
     private boolean confirmed;
 }
