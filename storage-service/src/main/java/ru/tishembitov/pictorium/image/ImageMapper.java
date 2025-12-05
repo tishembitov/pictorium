@@ -79,8 +79,6 @@ public interface ImageMapper {
     @Mapping(target = "expiresAt", source = "expiresAt")
     @Mapping(target = "requiredHeaders", source = "requiredHeaders")
     @Mapping(target = "thumbnailImageId", source = "thumbnailImageId")
-    @Mapping(target = "thumbnailUploadUrl", source = "thumbnailUploadUrl")
-    @Mapping(target = "thumbnailObjectName", source = "thumbnailObjectName")
     PresignedUploadResponse toPresignedUploadResponse(
             String imageId,
             String uploadUrl,
