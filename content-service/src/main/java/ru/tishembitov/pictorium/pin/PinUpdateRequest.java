@@ -9,13 +9,14 @@ import java.util.Set;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PinUpdateRequest(
 
+        @Size(max = 64)
         String imageId,
-        String imageUrl,
-        String thumbnailId,
-        String thumbnailUrl,
 
+        @Size(max = 64)
+        String thumbnailId,
+
+        @Size(max = 64)
         String videoPreviewId,
-        String videoPreviewUrl,
 
         @Size(max = 200)
         String title,
@@ -25,13 +26,6 @@ public record PinUpdateRequest(
 
         @Size(max = 200)
         String href,
-
-        @Size(max = 100)
-        String rgb,
-
-        Integer width,
-
-        Integer height,
 
         Set<@NotBlank @Size(max = 100) String> tags
 ) {}

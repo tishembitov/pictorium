@@ -23,8 +23,8 @@ public class LikeServiceImpl implements LikeService {
     private final LikeRepository SavedPinRepository; // TODO: переименовать в savedPinRepository и использовать правильный тип
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
-    private final PinService pinService;
-    private final CommentService commentService;
+    private final PinMapper pinMapper;
+    private final CommentMapper commentMapper;
     private final LikeMapper likeMapper;
 
     @Override
@@ -38,14 +38,14 @@ public class LikeServiceImpl implements LikeService {
         boolean isSaved = SavedPinRepository.existsByUserIdAndPinId(userId, pinId);
 
         if (likeRepository.existsByUserIdAndPinId(userId, pinId)) {
-            return  pinService.buildPinResponse(pin, true, isSaved);
+            return  pinMapper.toResponse(pin, true, isSaved);
         }
 
         Like like = likeMapper.toEntity(userId, pin);
         likeRepository.save(like);
         pinRepository.incrementLikeCount(pinId);
 
-        return  pinService.buildPinResponse(pin, true, isSaved);
+        return  pinMapper.toResponse(pin, true, isSaved);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class LikeServiceImpl implements LikeService {
                         "Comment with id " + commentId + " not found"));
 
         if (likeRepository.existsByUserIdAndCommentId(userId, commentId)) {
-            return commentService.buildCommentResponse(comment, true);
+            return commentMapper.toResponse(comment, true);
         }
 
         Like like = likeMapper.toEntity(userId, comment);
@@ -93,7 +93,7 @@ public class LikeServiceImpl implements LikeService {
 
         // TODO: Send notification if comment.getUserId() != userId
 
-        return commentService.buildCommentResponse(comment, true);
+        return commentMapper.toResponse(comment, true);
     }
 
     @Override

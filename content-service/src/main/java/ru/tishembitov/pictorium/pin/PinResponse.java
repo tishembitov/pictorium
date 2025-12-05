@@ -11,15 +11,9 @@ public record PinResponse(
         String description,
         String href,
 
-        String imageUrl,
-        String thumbnailUrl,
-        String videoPreviewUrl,
-
-        String rgb,
-        Integer width,
-        Integer height,
-        Long fileSize,
-        String contentType,
+        String imageId,
+        String thumbnailId,
+        String videoPreviewId,
 
         Instant createdAt,
         Instant updatedAt,

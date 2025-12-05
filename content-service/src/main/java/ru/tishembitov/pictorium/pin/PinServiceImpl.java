@@ -8,13 +8,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.client.ImageUrlService;
+import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
+import ru.tishembitov.pictorium.util.SecurityUtils;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
-import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,9 +27,8 @@ public class PinServiceImpl implements PinService {
     private final PinRepository pinRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
-    private final ImageUrlService imageUrlService;
-    //TODO: реализовать обработку уведомлений и счетчика просмотров через события Kafka
-    //TODO: сделать проверку прав доступа через репозиторий одним запросом
+    private final ImageService imageService;
+
     @Override
     public PinResponse getPinById(UUID pinId) {
         Pin pin = pinRepository.findByIdWithTags(pinId)
@@ -36,7 +36,7 @@ public class PinServiceImpl implements PinService {
 
         PinInteractionDto interaction = getPinInteractionDto(pinId);
 
-        return buildPinResponse(pin, interaction.isLiked(), interaction.isSaved());
+        return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
     }
 
     @Override
@@ -62,11 +62,8 @@ public class PinServiceImpl implements PinService {
 
         return pinIds.map(id -> {
             Pin pin = pinMap.get(id);
-            PinInteractionDto interaction = interactions.getOrDefault(
-                    id,
-                    PinInteractionDto.empty()
-            );
-            return buildPinResponse(pin, interaction.isLiked(), interaction.isSaved());
+            PinInteractionDto interaction = interactions.getOrDefault(id, PinInteractionDto.empty());
+            return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
         });
     }
 
@@ -74,8 +71,6 @@ public class PinServiceImpl implements PinService {
     @Transactional
     public PinResponse createPin(PinCreateRequest request) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
-
-        imageUrlService.validateImageExists(request.imageId());
 
         Pin pin = pinMapper.toEntity(currentUserId, request);
 
@@ -88,7 +83,7 @@ public class PinServiceImpl implements PinService {
 
         log.info("Pin created: {} by user: {}", saved.getId(), currentUserId);
 
-        return buildPinResponse(saved, false, false);
+        return pinMapper.toResponse(saved, false, false);
     }
 
     @Override
@@ -101,22 +96,9 @@ public class PinServiceImpl implements PinService {
 
         checkPinOwnership(pin, currentUserId);
 
-        if (request.imageId() != null && !request.imageId().equals(pin.getImageId())) {
-            imageUrlService.deleteImageSafely(pin.getImageId());
-            if (pin.getThumbnailId() != null) {
-                imageUrlService.deleteImageSafely(pin.getThumbnailId());
-            }
-
-            imageUrlService.validateImageExists(request.imageId());
-        }
-
-        if (request.videoPreviewId() != null && !request.videoPreviewId().equals(pin.getVideoPreviewId())) {
-            if (pin.getVideoPreviewId() != null) {
-                imageUrlService.deleteImageSafely(pin.getVideoPreviewId());
-            }
-
-            imageUrlService.validateImageExists(request.imageId());
-        }
+        handleImageUpdate(request.imageId(), pin.getImageId(), pin::setImageId);
+        handleImageUpdate(request.thumbnailId(), pin.getThumbnailId(), pin::setThumbnailId);
+        handleImageUpdate(request.videoPreviewId(), pin.getVideoPreviewId(), pin::setVideoPreviewId);
 
         pinMapper.updateEntity(pin, request);
 
@@ -130,12 +112,11 @@ public class PinServiceImpl implements PinService {
 
         Pin updated = pinRepository.save(pin);
 
-        Map<UUID, PinInteractionDto> interactions = getPinInteractionDtosBatch(Set.of(pinId));
-        PinInteractionDto interaction = interactions.getOrDefault(pinId, PinInteractionDto.empty());
+        PinInteractionDto interaction = getPinInteractionDto(pinId);
 
         log.info("Pin updated: {}", pinId);
 
-        return buildPinResponse(updated, interaction.isLiked(), interaction.isSaved());
+        return pinMapper.toResponse(updated, interaction.isLiked(), interaction.isSaved());
     }
 
     @Override
@@ -148,19 +129,38 @@ public class PinServiceImpl implements PinService {
 
         checkPinOwnership(pin, currentUserId);
 
-        imageUrlService.deleteImageSafely(pin.getImageId());
-        if (pin.getThumbnailId() != null) {
-            imageUrlService.deleteImageSafely(pin.getThumbnailId());
-        }
-        if (pin.getVideoPreviewId() != null) {
-            imageUrlService.deleteImageSafely(pin.getVideoPreviewId());
-        }
+        imageService.deleteImageSafely(pin.getImageId());
+        imageService.deleteImageSafely(pin.getThumbnailId());
+        imageService.deleteImageSafely(pin.getVideoPreviewId());
 
         pinRepository.delete(pin);
 
         log.info("Pin deleted: {} by user: {}", pinId, currentUserId);
     }
 
+    @Override
+    public Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds) {
+        return SecurityUtils.getCurrentUserId()
+                .map(userId -> calculateUserInteractionsBatch(userId, pinIds))
+                .orElseGet(() -> createEmptyInteractions(pinIds));
+    }
+
+    private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {
+        if (newId == null) {
+            return;
+        }
+
+        if (newId.isBlank()) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(null);
+            return;
+        }
+
+        if (!newId.equals(currentId)) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(newId);
+        }
+    }
 
     private PinInteractionDto getPinInteractionDto(UUID pinId) {
         return SecurityUtils.getCurrentUserId()
@@ -170,12 +170,6 @@ public class PinServiceImpl implements PinService {
                     return interactions.getOrDefault(pinId, PinInteractionDto.empty());
                 })
                 .orElseGet(PinInteractionDto::empty);
-    }
-
-    public Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds) {
-        return SecurityUtils.getCurrentUserId()
-                .map(userId -> calculateUserInteractionsBatch(userId, pinIds))
-                .orElseGet(() -> createEmptyInteractions(pinIds));
     }
 
     private Map<UUID, PinInteractionDto> calculateUserInteractionsBatch(String userId, Set<UUID> pinIds) {
@@ -203,7 +197,6 @@ public class PinServiceImpl implements PinService {
                         pinId -> PinInteractionDto.empty()
                 ));
     }
-
 
     private void checkPinOwnership(Pin pin, String userId) {
         if (!pin.getAuthorId().equals(userId)) {
@@ -254,18 +247,5 @@ public class PinServiceImpl implements PinService {
             }
             default -> filter;
         };
-    }
-
-    @Override
-    public PinResponse buildPinResponse(Pin pin, Boolean isLiked, Boolean isSaved) {
-        String imageUrl = imageUrlService.getImageUrl(pin.getImageId());
-        String thumbnailUrl = pin.getThumbnailId() != null
-                ? imageUrlService.getImageUrl(pin.getThumbnailId())
-                : null;
-        String videoPreviewUrl = pin.getVideoPreviewId() != null
-                ? imageUrlService.getImageUrl(pin.getVideoPreviewId())
-                : null;
-
-        return pinMapper.toResponse(pin, imageUrl, thumbnailUrl, videoPreviewUrl, isLiked, isSaved);
     }
 }

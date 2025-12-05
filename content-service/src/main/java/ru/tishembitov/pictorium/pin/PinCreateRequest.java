@@ -12,15 +12,11 @@ public record PinCreateRequest(
         @NotBlank(message = "Image ID is required")
         String imageId,
 
-        String imageUrl,
-
+        @Size(max = 64)
         String thumbnailId,
 
-        String thumbnailUrl,
-
+        @Size(max = 64)
         String videoPreviewId,
-
-        String videoPreviewUrl,
 
         @Size(max = 200)
         String title,
@@ -30,18 +26,6 @@ public record PinCreateRequest(
 
         @Size(max = 200)
         String href,
-
-        @Size(max = 100)
-        String rgb,
-
-        Integer width,
-
-        Integer height,
-
-        Long fileSize,
-
-        @Size(max = 50)
-        String contentType,
 
         Set<@NotBlank @Size(max = 100) String> tags
 ) {}

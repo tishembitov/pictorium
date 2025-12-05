@@ -20,7 +20,7 @@ public class SavedPinServiceImpl implements SavedPinService {
     private final SavedPinRepository savedPinRepository;
     private final PinRepository pinRepository;
     private final LikeRepository likeRepository;
-    private final PinService pinService;
+    private final PinMapper pinMapper;
 
     @Override
     public PinResponse savePin(UUID pinId) {
@@ -32,7 +32,7 @@ public class SavedPinServiceImpl implements SavedPinService {
         boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pinId);
 
         if (savedPinRepository.existsByUserIdAndPinId(userId, pinId)) {
-            return pinService.buildPinResponse(pin, isLiked, true);
+            return pinMapper.toResponse(pin, isLiked, true);
         }
 
         SavedPin savedPin = SavedPin.builder()
@@ -43,7 +43,7 @@ public class SavedPinServiceImpl implements SavedPinService {
         savedPinRepository.save(savedPin);
         pinRepository.incrementSaveCount(pinId);
 
-        return  pinService.buildPinResponse(pin, isLiked, true);
+        return  pinMapper.toResponse(pin, isLiked, true);
     }
 
     @Override

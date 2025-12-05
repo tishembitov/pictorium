@@ -42,38 +42,13 @@ public class Pin {
     private String href;
 
     @Column(nullable = false, length = 100)
-    private String imageId;  // ID в storage-service
-
-    @Column(length = 1000)
-    private String imageUrl;  // Кешированный URL для производительности
+    private String imageId;
 
     @Column(length = 100)
     private String thumbnailId;
 
-    @Column(length = 1000)
-    private String thumbnailUrl;
-
     @Column(length = 100)
     private String videoPreviewId;
-
-    @Column(length = 1000)
-    private String videoPreviewUrl;
-
-
-    @Column(length = 100)
-    private String rgb;  // Доминантный цвет
-
-    @Column
-    private Integer width;
-
-    @Column
-    private Integer height;
-
-    @Column
-    private Long fileSize;
-
-    @Column(length = 50)
-    private String contentType;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

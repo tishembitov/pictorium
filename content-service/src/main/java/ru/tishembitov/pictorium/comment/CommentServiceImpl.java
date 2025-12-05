@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.comment;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -7,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.client.ImageUrlService;
+import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.like.LikeRepository;
@@ -16,6 +17,7 @@ import ru.tishembitov.pictorium.pin.PinRepository;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Slf4j
 @Service
@@ -27,28 +29,24 @@ public class CommentServiceImpl implements CommentService {
     private final LikeRepository likeRepository;
     private final PinRepository pinRepository;
     private final CommentMapper commentMapper;
-    private final ImageUrlService imageUrlService;
-    //private final NotificationService notificationService;
-    //TODO: сделать изменение счетчиков на n, а не единично + сделать в миграции liquabase каскадное удаление
+    private final ImageService imageService;
 
-    public CommentResponse createCommentOnPin(UUID pinId, CommentCreateRequest request) {
+    @Override
+    public CommentResponse createCommentOnPin(UUID pinId, @Valid CommentCreateRequest request) {
         Pin pin = pinRepository.findById(pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
-
-        if (request.imageId() != null && !request.imageId().isBlank()) {
-            imageUrlService.validateImageExists(request.imageId());
-        }
 
         Comment comment = commentMapper.toEntity(request, pin, currentUserId, null);
         comment = commentRepository.save(comment);
 
         pinRepository.incrementCommentCount(pinId);
 
-        return buildCommentResponse(comment, false);
+        return commentMapper.toResponse(comment, false);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Page<CommentResponse> getCommentsOnPin(UUID pinId, Pageable pageable) {
         if (!pinRepository.existsById(pinId)) {
@@ -57,7 +55,7 @@ public class CommentServiceImpl implements CommentService {
 
         Page<Comment> comments = commentRepository.findByPinIdOrderByCreatedAtDesc(pinId, pageable);
 
-        return comments.map(comment -> buildCommentResponse(
+        return comments.map(comment -> commentMapper.toResponse(
                 comment,
                 SecurityUtils.getCurrentUserId()
                         .map(userId -> likeRepository.existsByUserIdAndCommentId(userId, comment.getId()))
@@ -65,7 +63,8 @@ public class CommentServiceImpl implements CommentService {
         ));
     }
 
-    public CommentResponse createReplyOnComment(UUID commentId, CommentCreateRequest request) {
+    @Override
+    public CommentResponse createReplyOnComment(UUID commentId, @Valid CommentCreateRequest request) {
         Comment parentComment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
 
@@ -75,10 +74,6 @@ public class CommentServiceImpl implements CommentService {
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        if (request.imageId() != null && !request.imageId().isBlank()) {
-            imageUrlService.validateImageExists(request.imageId());
-        }
-
         Pin pin = parentComment.getPin();
 
         Comment reply = commentMapper.toEntity(request, pin, currentUserId, parentComment);
@@ -87,9 +82,10 @@ public class CommentServiceImpl implements CommentService {
         commentRepository.incrementReplyCount(commentId);
         pinRepository.incrementCommentCount(pin.getId());
 
-        return buildCommentResponse(reply, false);
+        return commentMapper.toResponse(reply, false);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Page<CommentResponse> getRepliesOnComment(UUID commentId, Pageable pageable) {
         if (!commentRepository.existsById(commentId)) {
@@ -99,7 +95,7 @@ public class CommentServiceImpl implements CommentService {
         Page<Comment> replies = commentRepository
                 .findByParentCommentIdOrderByCreatedAtDesc(commentId, pageable);
 
-        return replies.map(comment -> buildCommentResponse(
+        return replies.map(comment -> commentMapper.toResponse(
                 comment,
                 SecurityUtils.getCurrentUserId()
                         .map(userId -> likeRepository.existsByUserIdAndCommentId(userId, comment.getId()))
@@ -107,12 +103,13 @@ public class CommentServiceImpl implements CommentService {
         ));
     }
 
+    @Override
     @Transactional(readOnly = true)
     public CommentResponse getCommentById(UUID commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
 
-        return buildCommentResponse(
+        return commentMapper.toResponse(
                 comment,
                 SecurityUtils.getCurrentUserId()
                         .map(userId -> likeRepository.existsByUserIdAndCommentId(userId, commentId))
@@ -120,27 +117,15 @@ public class CommentServiceImpl implements CommentService {
         );
     }
 
-    public CommentResponse updateComment(UUID commentId, CommentUpdateRequest request) {
+    @Override
+    public CommentResponse updateComment(UUID commentId, @Valid CommentUpdateRequest request) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
 
         String currentUserId = SecurityUtils.requireCurrentUserId();
         checkCommentOwnership(comment, currentUserId);
 
-        if (request.imageId() != null && !request.imageId().equals(comment.getImageId())) {
-            if (comment.getImageId() != null && !comment.getImageId().isBlank()) {
-                imageUrlService.deleteImageSafely(comment.getImageId());
-            }
-
-            if (!request.imageId().isBlank()) {
-                imageUrlService.validateImageExists(request.imageId());
-                comment.setImageId(request.imageId());
-                comment.setImageUrl(request.imageUrl());
-            } else {
-                comment.setImageId(null);
-                comment.setImageUrl(null);
-            }
-        }
+        handleImageUpdate(request.imageId(), comment.getImageId(), comment::setImageId);
 
         if (request.content() != null) {
             comment.setContent(request.content());
@@ -148,12 +133,13 @@ public class CommentServiceImpl implements CommentService {
 
         comment = commentRepository.save(comment);
 
-        return buildCommentResponse(
+        return commentMapper.toResponse(
                 comment,
                 likeRepository.existsByUserIdAndCommentId(currentUserId, commentId)
         );
     }
 
+    @Override
     public void deleteComment(UUID commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
@@ -161,9 +147,7 @@ public class CommentServiceImpl implements CommentService {
         String currentUserId = SecurityUtils.requireCurrentUserId();
         checkCommentOwnership(comment, currentUserId);
 
-        if (comment.getImageId() != null && !comment.getImageId().isBlank()) {
-            imageUrlService.deleteImageSafely(comment.getImageId());
-        }
+        imageService.deleteImageSafely(comment.getImageId());
 
         UUID pinId = comment.getPin().getId();
 
@@ -181,18 +165,26 @@ public class CommentServiceImpl implements CommentService {
         log.info("Comment deleted: {} by user: {}", commentId, currentUserId);
     }
 
+    private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {
+        if (newId == null) {
+            return;
+        }
+
+        if (newId.isBlank()) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(null);
+            return;
+        }
+
+        if (!newId.equals(currentId)) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(newId);
+        }
+    }
+
     private void checkCommentOwnership(Comment comment, String userId) {
         if (!comment.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this comment");
         }
-    }
-
-    @Override
-    public CommentResponse buildCommentResponse(Comment comment, Boolean isLiked) {
-        String imageUrl = comment.getImageId() != null
-                ? imageUrlService.getImageUrl(comment.getImageId())
-                : null;
-
-        return commentMapper.toResponse(comment, imageUrl, isLiked);
     }
 }

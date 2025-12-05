@@ -6,6 +6,5 @@ public record CommentUpdateRequest (
         @Size(max = 400, message = "Content must not exceed 400 characters")
         String content,
 
-        String imageId,
-        String imageUrl
+        String imageId
 ){}
