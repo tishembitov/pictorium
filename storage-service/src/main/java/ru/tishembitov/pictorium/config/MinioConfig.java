@@ -3,42 +3,38 @@ package ru.tishembitov.pictorium.config;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
-import jakarta.annotation.PostConstruct;
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 
 @Slf4j
-@Data
 @Configuration
-@ConfigurationProperties(prefix = "minio")
+@RequiredArgsConstructor
 public class MinioConfig {
 
-    private String endpoint;
-    private String accessKey;
-    private String secretKey;
-    private String bucketName;
-    private String thumbnailBucket;
+    private final MinioProperties minioProperties;
 
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
-                .endpoint(endpoint)
-                .credentials(accessKey, secretKey)
+                .endpoint(minioProperties.getEndpoint())
+                .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
                 .build();
     }
 
-    @PostConstruct
-    public void init() {
+    @EventListener(ApplicationReadyEvent.class)
+    public void initBuckets() {
         try {
             MinioClient client = minioClient();
 
-            createBucketIfNotExists(client, bucketName);
+            createBucketIfNotExists(client, minioProperties.getBucketName());
 
-            if (thumbnailBucket != null && !thumbnailBucket.isEmpty()) {
-                createBucketIfNotExists(client, thumbnailBucket);
+            if (minioProperties.getThumbnailBucket() != null
+                    && !minioProperties.getThumbnailBucket().isEmpty()) {
+                createBucketIfNotExists(client, minioProperties.getThumbnailBucket());
             }
 
             log.info("MinIO buckets initialized successfully");
