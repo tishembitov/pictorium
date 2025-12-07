@@ -65,7 +65,6 @@ public class ImageController {
                 response.setContentLengthLong(metadata.getSize());
             }
 
-            // ← ИСПРАВЛЕНО: использование стандартного метода transferTo (Java 9+)
             OutputStream outputStream = response.getOutputStream();
             imageStream.transferTo(outputStream);
             outputStream.flush();

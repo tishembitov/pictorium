@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.comment.*;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.pin.*;
+import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.UUID;
@@ -20,7 +21,7 @@ import java.util.UUID;
 public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
-    private final LikeRepository SavedPinRepository; // TODO: переименовать в savedPinRepository и использовать правильный тип
+    private final SavedPinRepository SavedPinRepository;
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
     private final PinMapper pinMapper;

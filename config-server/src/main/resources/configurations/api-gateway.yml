@@ -159,8 +159,11 @@ springdoc:
       - name: user-service
         url: /user-service/v3/api-docs
 
-#      - name: content-service
-#        url: /content-service/v3/api-docs
+      - name: content-service
+        url: /content-service/v3/api-docs
+
+      - name: storage-service
+        url: /storage-service/v3/api-docs
 #
 #      - name: social-service
 #        url: /social-service/v3/api-docs
@@ -177,8 +180,6 @@ springdoc:
 #      - name: search-service
 #        url: /search-service/v3/api-docs
 #
-#      - name: media-service
-#        url: /media-service/v3/api-docs
 #
 #      - name: admin-service
 #        url: /admin-service/v3/api-docs
