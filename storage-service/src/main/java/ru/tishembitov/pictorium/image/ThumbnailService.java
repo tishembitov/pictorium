@@ -1,6 +1,7 @@
 package ru.tishembitov.pictorium.image;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ThumbnailService {
 
     private static final int DEFAULT_WIDTH = 236;
