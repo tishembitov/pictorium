@@ -6,11 +6,14 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-
 import java.time.Instant;
 
 @Entity
-@Table(name = "image")
+@Table(name = "image", indexes = {
+        @Index(name = "idx_image_status", columnList = "status"),
+        @Index(name = "idx_image_category_status", columnList = "category, status"),
+        @Index(name = "idx_image_created_at", columnList = "createdAt")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +23,7 @@ import java.time.Instant;
 public class Image {
 
     @Id
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 36)
     private String id;
 
     @Column(nullable = false)
@@ -38,11 +41,14 @@ public class Image {
     private String category;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private ImageStatus status;
 
-    // Связь с thumbnail
     private String thumbnailImageId;
+
+    private Integer thumbnailWidth;
+
+    private Integer thumbnailHeight;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -54,9 +60,17 @@ public class Image {
     private Instant confirmedAt;
 
     public enum ImageStatus {
-        PENDING,    // Presigned URL выдан, ожидает загрузки
-        CONFIRMED,  // Загрузка подтверждена
-        EXPIRED,    // Presigned URL истёк без загрузки
-        DELETED     // Удалено
+        PENDING,
+        CONFIRMED,
+        EXPIRED,
+        DELETED
+    }
+
+    public boolean isPending() {
+        return status == ImageStatus.PENDING;
+    }
+
+    public boolean isConfirmed() {
+        return status == ImageStatus.CONFIRMED;
     }
 }

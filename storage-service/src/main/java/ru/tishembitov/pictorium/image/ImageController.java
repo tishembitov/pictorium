@@ -4,13 +4,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-
 
 @Slf4j
 @RestController
@@ -23,15 +23,13 @@ public class ImageController {
     @PostMapping("/presigned-upload")
     public ResponseEntity<PresignedUploadResponse> getPresignedUploadUrl(
             @Valid @RequestBody PresignedUploadRequest request) {
-
-        log.info("Generating presigned upload URL for file: {}", request.getFileName());
+        log.info("Generating presigned upload URL for: {}", request.getFileName());
         return ResponseEntity.ok(imageService.generatePresignedUploadUrl(request));
     }
 
     @PostMapping("/confirm")
     public ResponseEntity<ConfirmUploadResponse> confirmUpload(
             @Valid @RequestBody ConfirmUploadRequest request) {
-
         log.info("Confirming upload for imageId: {}", request.getImageId());
         return ResponseEntity.ok(imageService.confirmUpload(request));
     }
@@ -40,7 +38,6 @@ public class ImageController {
     public ResponseEntity<ImageUrlResponse> getImageUrl(
             @PathVariable String imageId,
             @RequestParam(value = "expiry", required = false) Integer expirySeconds) {
-
         return ResponseEntity.ok(imageService.getImageUrl(imageId, expirySeconds));
     }
 
@@ -50,22 +47,20 @@ public class ImageController {
     }
 
     @GetMapping("/{imageId}")
-    public void downloadImage(
-            @PathVariable String imageId,
-            HttpServletResponse response) {
+    public void downloadImage(@PathVariable String imageId, HttpServletResponse response) {
+        ImageMetadata metadata = imageService.getImageMetadata(imageId);
 
-        try (InputStream imageStream = imageService.downloadImage(imageId)) {
-            ImageMetadata metadata = imageService.getImageMetadata(imageId);
+        response.setContentType(metadata.getContentType());
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "inline; filename=\"" + metadata.getFileName() + "\"");
 
-            response.setContentType(metadata.getContentType());
-            response.setHeader("Content-Disposition",
-                    "inline; filename=\"" + metadata.getFileName() + "\"");
+        if (metadata.getSize() != null) {
+            response.setContentLengthLong(metadata.getSize());
+        }
 
-            if (metadata.getSize() != null) {
-                response.setContentLengthLong(metadata.getSize());
-            }
+        try (InputStream imageStream = imageService.downloadImage(imageId);
+             OutputStream outputStream = response.getOutputStream()) {
 
-            OutputStream outputStream = response.getOutputStream();
             imageStream.transferTo(outputStream);
             outputStream.flush();
 
@@ -85,7 +80,6 @@ public class ImageController {
     @GetMapping("/list")
     public ResponseEntity<List<ImageMetadata>> listImages(
             @RequestParam(value = "category", required = false) String category) {
-
         return ResponseEntity.ok(imageService.listImagesByCategory(category));
     }
 }

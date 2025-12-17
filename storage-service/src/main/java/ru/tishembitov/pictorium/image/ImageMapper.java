@@ -20,93 +20,59 @@ public interface ImageMapper {
     @Mapping(target = "contentType", source = "request.contentType")
     @Mapping(target = "fileSize", source = "request.fileSize")
     @Mapping(target = "category", source = "request.category")
+    @Mapping(target = "thumbnailWidth", source = "request.thumbnailWidth")
+    @Mapping(target = "thumbnailHeight", source = "request.thumbnailHeight")
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "thumbnailImageId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "confirmedAt", ignore = true)
-    Image toImageEntity(
-            PresignedUploadRequest request,
-            String imageId,
-            String objectName,
-            String bucketName
-    );
-
-    @Mapping(target = "id", source = "thumbnailImageId")
-    @Mapping(target = "objectName", source = "thumbnailObjectName")
-    @Mapping(target = "bucketName", source = "thumbnailBucket")
-    @Mapping(target = "fileName", expression = "java(\"thumb_\" + request.getFileName())")
-    @Mapping(target = "contentType", constant = "image/jpeg")
-    @Mapping(target = "fileSize", ignore = true)
-    @Mapping(target = "category", source = "request.category")
-    @Mapping(target = "status", constant = "PENDING")
-    @Mapping(target = "thumbnailImageId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "confirmedAt", ignore = true)
-    Image toThumbnailEntity(
-            PresignedUploadRequest request,
-            String thumbnailImageId,
-            String thumbnailObjectName,
-            String thumbnailBucket
-    );
+    Image toEntity(PresignedUploadRequest request, String imageId, String objectName, String bucketName);
 
     @Mapping(target = "imageId", source = "id")
     @Mapping(target = "size", source = "fileSize")
-    @Mapping(target = "updatedAt", source = "updatedAt")
     @Mapping(target = "etag", ignore = true)
-    ImageMetadata toImageMetadata(Image image);
+    ImageMetadata toMetadata(Image image);
 
-    List<ImageMetadata> toImageMetadataList(List<Image> images);
+    List<ImageMetadata> toMetadataList(List<Image> images);
 
     @Mapping(target = "imageId", source = "image.id")
-    @Mapping(target = "imageUrl", source = "imageUrl")
-    @Mapping(target = "thumbnailUrl", source = "thumbnailUrl")
-    @Mapping(target = "fileName", source = "image.fileName")
     @Mapping(target = "size", source = "image.fileSize")
-    @Mapping(target = "contentType", source = "image.contentType")
-    @Mapping(target = "updatedAt", source = "image.updatedAt")  // ← Добавлено
-    @Mapping(target = "confirmed", source = "confirmed")
-    ConfirmUploadResponse toConfirmUploadResponse(
-            Image image,
-            String imageUrl,
-            String thumbnailUrl,
-            boolean confirmed
-    );
+    @Mapping(target = "confirmed", expression = "java(image.isConfirmed())")
+    ConfirmUploadResponse toConfirmResponse(Image image, String imageUrl, String thumbnailUrl);
 
-    @Mapping(target = "imageId", source = "imageId")
-    @Mapping(target = "uploadUrl", source = "uploadUrl")
-    @Mapping(target = "expiresAt", source = "expiresAt")
-    @Mapping(target = "requiredHeaders", source = "requiredHeaders")
-    @Mapping(target = "thumbnailImageId", source = "thumbnailImageId")
-    PresignedUploadResponse toPresignedUploadResponse(
-            String imageId,
-            String uploadUrl,
-            Long expiresAt,
-            Map<String, String> requiredHeaders,
-            String thumbnailImageId,
-            String thumbnailUploadUrl,
-            String thumbnailObjectName
-    );
+    default PresignedUploadResponse toPresignedResponse(String imageId,
+                                                        String uploadUrl,
+                                                        long expiresAt,
+                                                        Map<String, String> requiredHeaders,
+                                                        String thumbnailImageId) {
+        return PresignedUploadResponse.builder()
+                .imageId(imageId)
+                .uploadUrl(uploadUrl)
+                .expiresAt(expiresAt)
+                .requiredHeaders(requiredHeaders)
+                .thumbnailImageId(thumbnailImageId)
+                .build();
+    }
 
-    @Mapping(target = "imageId", source = "imageId")
-    @Mapping(target = "url", source = "url")
-    @Mapping(target = "expiresAt", source = "expiresAt")
-    ImageUrlResponse toImageUrlResponse(String imageId, String url, Long expiresAt);
+    default ImageUrlResponse toUrlResponse(String imageId, String url, long expiresAt) {
+        return ImageUrlResponse.builder()
+                .imageId(imageId)
+                .url(url)
+                .expiresAt(expiresAt)
+                .build();
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "objectName", ignore = true)
     @Mapping(target = "bucketName", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "thumbnailImageId", ignore = true)
+    @Mapping(target = "thumbnailWidth", ignore = true)
+    @Mapping(target = "thumbnailHeight", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "status", constant = "CONFIRMED")
     @Mapping(target = "confirmedAt", expression = "java(Instant.now())")
-    void updateOnConfirm(
-            @MappingTarget Image image,
-            Long fileSize,
-            String contentType,
-            String fileName
-    );
+    void updateOnConfirm(@MappingTarget Image image, Long fileSize, String contentType, String fileName);
 }

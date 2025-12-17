@@ -1,6 +1,5 @@
 package ru.tishembitov.pictorium.image;
 
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +12,9 @@ import java.util.Optional;
 @Repository
 public interface ImageRepository extends JpaRepository<Image, String> {
 
-    Optional<Image> findById(String imageId);
-
     Optional<Image> findByIdAndStatus(String imageId, Image.ImageStatus status);
+
+    List<Image> findByStatus(Image.ImageStatus status);
 
     List<Image> findByCategory(String category);
 
@@ -27,5 +26,6 @@ public interface ImageRepository extends JpaRepository<Image, String> {
             @Param("threshold") Instant threshold
     );
 
-    boolean existsByIdAndStatus(String imageId, Image.ImageStatus status);
+    @Query("SELECT i FROM Image i WHERE i.thumbnailImageId = :thumbnailId")
+    Optional<Image> findByThumbnailImageId(@Param("thumbnailId") String thumbnailId);
 }

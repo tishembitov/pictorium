@@ -27,7 +27,8 @@ public class PresignedUploadRequest {
 
     private String category;
 
-    private boolean generateThumbnail;
+    @Builder.Default
+    private boolean generateThumbnail = false;
 
     @Min(value = 50, message = "Thumbnail width must be at least 50")
     @Max(value = 1000, message = "Thumbnail width must not exceed 1000")

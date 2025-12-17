@@ -38,36 +38,58 @@ public class ImageCleanupScheduler {
         List<Image> expiredRecords = imageRepository
                 .findExpiredPendingUploads(Image.ImageStatus.PENDING, threshold);
 
+        if (expiredRecords.isEmpty()) {
+            log.debug("No expired pending uploads found");
+            return;
+        }
+
         log.info("Found {} expired pending uploads to cleanup", expiredRecords.size());
 
-        expiredRecords.forEach(this::processExpiredRecord);
+        int cleaned = 0;
+        for (Image record : expiredRecords) {
+            if (processExpiredRecord(record)) {
+                cleaned++;
+            }
+        }
+
+        log.info("Cleanup completed. Processed: {}/{}", cleaned, expiredRecords.size());
     }
 
-    private void processExpiredRecord(Image record) {
+    private boolean processExpiredRecord(Image record) {
         try {
-            tryRemoveFromMinio(record);
-            markAsExpired(record);
-            log.debug("Marked as expired: {}", record.getId());
+            tryRemoveFromMinio(record.getBucketName(), record.getObjectName());
+
+            if (record.getThumbnailImageId() != null) {
+                imageRepository.findById(record.getThumbnailImageId())
+                        .ifPresent(thumb -> {
+                            tryRemoveFromMinio(thumb.getBucketName(), thumb.getObjectName());
+                            thumb.setStatus(Image.ImageStatus.EXPIRED);
+                            imageRepository.save(thumb);
+                        });
+            }
+
+            record.setStatus(Image.ImageStatus.EXPIRED);
+            imageRepository.save(record);
+
+            log.debug("Expired record cleaned: {}", record.getId());
+            return true;
+
         } catch (Exception e) {
             log.error("Failed to cleanup expired record: {}", record.getId(), e);
+            return false;
         }
     }
 
-    private void tryRemoveFromMinio(Image record) {
+    private void tryRemoveFromMinio(String bucket, String objectName) {
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
-                            .bucket(record.getBucketName())
-                            .object(record.getObjectName())
+                            .bucket(bucket)
+                            .object(objectName)
                             .build()
             );
         } catch (Exception e) {
-            log.debug("Object not found in MinIO, skipping: {}", record.getObjectName());
+            log.debug("Object not found or already removed: {}/{}", bucket, objectName);
         }
-    }
-
-    private void markAsExpired(Image record) {
-        record.setStatus(Image.ImageStatus.EXPIRED);
-        imageRepository.save(record);
     }
 }
