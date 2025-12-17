@@ -248,6 +248,7 @@ public class ImageServiceImpl implements ImageService {
                     "Invalid content type: " + contentType + ". Allowed types: " + allowedContentTypes
             );
         }
+
     }
 
     private String generateImageId() {
