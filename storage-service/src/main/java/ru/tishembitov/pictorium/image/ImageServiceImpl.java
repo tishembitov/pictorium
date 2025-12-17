@@ -62,10 +62,16 @@ public class ImageServiceImpl implements ImageService {
                     minioProperties.getBucketName()
             );
 
+            log.info("generateThumbnail={}, hasThumbnailBucket={}",
+                    request.isGenerateThumbnail(), hasThumbnailBucket());
+
             if (request.isGenerateThumbnail() && hasThumbnailBucket()) {
                 String thumbnailImageId = generateImageId();
                 record.setThumbnailImageId(thumbnailImageId);
-
+                log.info("Thumbnail will be generated. ThumbnailId: {}", thumbnailImageId);
+            } else {
+                log.warn("Thumbnail generation skipped. generateThumbnail={}, hasThumbnailBucket={}",
+                        request.isGenerateThumbnail(), hasThumbnailBucket());
             }
 
             imageRepository.save(record);
@@ -116,8 +122,14 @@ public class ImageServiceImpl implements ImageService {
                     request.getFileName() != null ? request.getFileName() : record.getFileName()
             );
 
+            log.info("ThumbnailImageId={}, hasThumbnailBucket={}",
+                    record.getThumbnailImageId(), hasThumbnailBucket());
+
             if (record.getThumbnailImageId() != null && hasThumbnailBucket()) {
+                log.info("Starting thumbnail generation for imageId: {}", record.getId());
                 generateAndSaveThumbnail(record, request);
+            } else {
+                log.warn("Thumbnail generation skipped in confirmUpload");
             }
 
             imageRepository.save(record);
@@ -334,8 +346,13 @@ public class ImageServiceImpl implements ImageService {
     }
 
     private void generateAndSaveThumbnail(Image record, ConfirmUploadRequest request) {
+        log.info("=== THUMBNAIL GENERATION START ===");
+        log.info("ImageId: {}, ThumbnailId: {}", record.getId(), record.getThumbnailImageId());
+        log.info("Source bucket: {}, object: {}", record.getBucketName(), record.getObjectName());
+        log.info("Target bucket: {}", minioProperties.getThumbnailBucket());
+
         try {
-            log.info("Generating thumbnail for imageId: {}", record.getId());
+            log.info("Step 1: Loading original image from MinIO...");
 
             InputStream originalStream = minioClient.getObject(
                     GetObjectArgs.builder()
@@ -344,6 +361,8 @@ public class ImageServiceImpl implements ImageService {
                             .build()
             );
 
+            log.info("Step 2: Original image loaded, generating thumbnail...");
+
             byte[] thumbnailBytes = thumbnailService.generateThumbnail(
                     originalStream,
                     236,
@@ -351,11 +370,16 @@ public class ImageServiceImpl implements ImageService {
             );
             originalStream.close();
 
+            log.info("Step 3: Thumbnail generated, size: {} bytes", thumbnailBytes.length);
+
             String thumbnailObjectName = buildObjectName(
                     record.getThumbnailImageId(),
                     record.getCategory(),
                     "jpg"
             );
+
+            log.info("Step 4: Saving to MinIO. Bucket: {}, Object: {}",
+                    minioProperties.getThumbnailBucket(), thumbnailObjectName);
 
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -366,6 +390,8 @@ public class ImageServiceImpl implements ImageService {
                             .contentType("image/jpeg")
                             .build()
             );
+
+            log.info("Step 5: Saved to MinIO, creating DB record...");
 
             Image thumbnailRecord = Image.builder()
                     .id(record.getThumbnailImageId())
@@ -381,11 +407,12 @@ public class ImageServiceImpl implements ImageService {
 
             imageRepository.save(thumbnailRecord);
 
-            log.info("Thumbnail generated and saved. ThumbnailId: {}, size: {} bytes",
-                    record.getThumbnailImageId(), thumbnailBytes.length);
+            log.info("=== THUMBNAIL GENERATION SUCCESS ===");
+            log.info("ThumbnailId: {}, size: {} bytes", record.getThumbnailImageId(), thumbnailBytes.length);
 
         } catch (Exception e) {
-            log.error("Failed to generate thumbnail for imageId: {}", record.getId(), e);
+            log.error("=== THUMBNAIL GENERATION FAILED ===");
+            log.error("Error: {}", e.getMessage(), e);
             record.setThumbnailImageId(null);
         }
     }
@@ -401,11 +428,18 @@ public class ImageServiceImpl implements ImageService {
 
         try {
             imageUrl = getImageUrl(record.getId(), null).getUrl();
-            if (record.getThumbnailImageId() != null) {
-                thumbnailUrl = getImageUrl(record.getThumbnailImageId(), null).getUrl();
-            }
         } catch (Exception e) {
-            log.warn("Failed to generate URLs for confirm response", e);
+            log.warn("Failed to generate image URL", e);
+        }
+
+        // Отдельный try-catch для thumbnail!
+        if (record.getThumbnailImageId() != null) {
+            try {
+                thumbnailUrl = getImageUrl(record.getThumbnailImageId(), null).getUrl();
+            } catch (Exception e) {
+                log.warn("Failed to generate thumbnail URL for: {}", record.getThumbnailImageId(), e);
+                // Не падаем, просто thumbnailUrl будет null
+            }
         }
 
         return imageMapper.toConfirmUploadResponse(record, imageUrl, thumbnailUrl, confirmed);
