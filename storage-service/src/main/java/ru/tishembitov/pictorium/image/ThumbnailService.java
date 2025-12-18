@@ -10,7 +10,6 @@ import ru.tishembitov.pictorium.exception.ImageStorageException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Set;
@@ -20,8 +19,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ThumbnailService {
 
-    private static final int DEFAULT_WIDTH = 236;
-    private static final int DEFAULT_HEIGHT = 350;
+    private static final int DEFAULT_THUMBNAIL_WIDTH = 236;
     private static final double DEFAULT_QUALITY = 0.85;
 
     private static final Set<String> SUPPORTED_FORMATS = Set.of(
@@ -32,34 +30,32 @@ public class ThumbnailService {
     public void init() {
         String[] readers = ImageIO.getReaderFormatNames();
         String[] writers = ImageIO.getWriterFormatNames();
-
         log.info("Supported image readers: {}", Arrays.toString(readers));
         log.info("Supported image writers: {}", Arrays.toString(writers));
-
-        // Проверяем критичные форматы
-        boolean webpSupported = Arrays.stream(readers)
-                .anyMatch(r -> r.equalsIgnoreCase("webp"));
-
-        if (!webpSupported) {
-            log.warn("WebP format is NOT supported! Add TwelveMonkeys dependency.");
-        } else {
-            log.info("WebP format is supported");
-        }
     }
 
     public boolean isFormatSupported(String contentType) {
-        if (contentType == null) {
-            return false;
-        }
-        return SUPPORTED_FORMATS.contains(contentType.toLowerCase());
+        return contentType != null && SUPPORTED_FORMATS.contains(contentType.toLowerCase());
     }
 
 
-    public byte[] generateThumbnail(InputStream originalImage,
-                                    Integer maxWidth,
-                                    Integer maxHeight) {
-        int targetWidth = maxWidth != null && maxWidth > 0 ? maxWidth : DEFAULT_WIDTH;
-        int targetHeight = maxHeight != null && maxHeight > 0 ? maxHeight : DEFAULT_HEIGHT;
+    public int calculateThumbnailHeight(int originalWidth, int originalHeight, int thumbnailWidth) {
+        if (originalWidth <= 0 || originalHeight <= 0) {
+            throw new IllegalArgumentException("Original dimensions must be positive");
+        }
+
+        double aspectRatio = (double) originalHeight / originalWidth;
+        return (int) Math.round(thumbnailWidth * aspectRatio);
+    }
+
+    public ThumbnailResult generateThumbnail(
+            InputStream originalImage,
+            int originalWidth,
+            int originalHeight,
+            Integer targetWidth
+    ) {
+        int thumbWidth = targetWidth != null && targetWidth > 0 ? targetWidth : DEFAULT_THUMBNAIL_WIDTH;
+        int thumbHeight = calculateThumbnailHeight(originalWidth, originalHeight, thumbWidth);
 
         BufferedImage bufferedImage = null;
 
@@ -68,24 +64,15 @@ public class ThumbnailService {
 
             if (bufferedImage == null) {
                 throw new ImageStorageException(
-                        "Cannot read image. Format may not be supported. " +
-                                "Supported readers: " + String.join(", ", ImageIO.getReaderFormatNames()));
+                        "Cannot read image. Format may not be supported.");
             }
 
-            log.debug("Original image: {}x{}, generating thumbnail with max: {}x{}",
-                    bufferedImage.getWidth(), bufferedImage.getHeight(),
-                    targetWidth, targetHeight);
-
-            int[] dimensions = calculateDimensions(
-                    bufferedImage.getWidth(),
-                    bufferedImage.getHeight(),
-                    targetWidth,
-                    targetHeight
-            );
+            log.debug("Generating thumbnail: {}x{} -> {}x{}",
+                    originalWidth, originalHeight, thumbWidth, thumbHeight);
 
             try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                 Thumbnails.of(bufferedImage)
-                        .size(dimensions[0], dimensions[1])
+                        .size(thumbWidth, thumbHeight)
                         .keepAspectRatio(true)
                         .outputFormat("jpg")
                         .outputQuality(DEFAULT_QUALITY)
@@ -94,14 +81,14 @@ public class ThumbnailService {
                 byte[] thumbnailBytes = outputStream.toByteArray();
 
                 log.debug("Generated thumbnail: {}x{}, size: {} bytes",
-                        dimensions[0], dimensions[1], thumbnailBytes.length);
+                        thumbWidth, thumbHeight, thumbnailBytes.length);
 
-                return thumbnailBytes;
+                return new ThumbnailResult(thumbnailBytes, thumbWidth, thumbHeight);
             }
 
         } catch (ImageStorageException e) {
             throw e;
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Failed to generate thumbnail: {}", e.getMessage(), e);
             throw new ImageStorageException("Failed to generate thumbnail: " + e.getMessage(), e);
         } finally {
@@ -109,25 +96,5 @@ public class ThumbnailService {
                 bufferedImage.flush();
             }
         }
-    }
-
-
-    private int[] calculateDimensions(int originalWidth, int originalHeight,
-                                      int maxWidth, int maxHeight) {
-        double widthRatio = (double) maxWidth / originalWidth;
-        double heightRatio = (double) maxHeight / originalHeight;
-        double ratio = Math.min(widthRatio, heightRatio);
-
-        if (ratio > 1.0) {
-            ratio = 1.0;
-        }
-
-        int newWidth = (int) Math.round(originalWidth * ratio);
-        int newHeight = (int) Math.round(originalHeight * ratio);
-
-        newWidth = Math.max(newWidth, 1);
-        newHeight = Math.max(newHeight, 1);
-
-        return new int[]{newWidth, newHeight};
     }
 }

@@ -20,4 +20,10 @@ public class ImageMetadata {
     private String etag;
     private Instant updatedAt;
     private String bucketName;
+
+    private Integer width;
+    private Integer height;
+
+    private Integer originalWidth;
+    private Integer originalHeight;
 }

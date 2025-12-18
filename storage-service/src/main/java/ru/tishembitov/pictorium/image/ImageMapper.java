@@ -1,15 +1,12 @@
 package ru.tishembitov.pictorium.image;
 
 import org.mapstruct.*;
-
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 @Mapper(
         componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        imports = {Instant.class}
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface ImageMapper {
 
@@ -20,8 +17,8 @@ public interface ImageMapper {
     @Mapping(target = "contentType", source = "request.contentType")
     @Mapping(target = "fileSize", source = "request.fileSize")
     @Mapping(target = "category", source = "request.category")
-    @Mapping(target = "thumbnailWidth", source = "request.thumbnailWidth")
-    @Mapping(target = "thumbnailHeight", source = "request.thumbnailHeight")
+    @Mapping(target = "width", source = "request.originalWidth")
+    @Mapping(target = "height", source = "request.originalHeight")
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "thumbnailImageId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -39,19 +36,39 @@ public interface ImageMapper {
     @Mapping(target = "imageId", source = "image.id")
     @Mapping(target = "size", source = "image.fileSize")
     @Mapping(target = "confirmed", expression = "java(image.isConfirmed())")
-    ConfirmUploadResponse toConfirmResponse(Image image, String imageUrl, String thumbnailUrl);
+    @Mapping(target = "originalWidth", source = "image.width")
+    @Mapping(target = "originalHeight", source = "image.height")
+    @Mapping(target = "thumbnailWidth", source = "thumbnailWidth")
+    @Mapping(target = "thumbnailHeight", source = "thumbnailHeight")
+    ConfirmUploadResponse toConfirmResponse(
+            Image image,
+            String imageUrl,
+            String thumbnailUrl,
+            Integer thumbnailWidth,
+            Integer thumbnailHeight
+    );
 
-    default PresignedUploadResponse toPresignedResponse(String imageId,
-                                                        String uploadUrl,
-                                                        long expiresAt,
-                                                        Map<String, String> requiredHeaders,
-                                                        String thumbnailImageId) {
+    default PresignedUploadResponse toPresignedResponse(
+            String imageId,
+            String uploadUrl,
+            long expiresAt,
+            Map<String, String> requiredHeaders,
+            String thumbnailImageId,
+            Integer originalWidth,
+            Integer originalHeight,
+            Integer thumbnailWidth,
+            Integer thumbnailHeight
+    ) {
         return PresignedUploadResponse.builder()
                 .imageId(imageId)
                 .uploadUrl(uploadUrl)
                 .expiresAt(expiresAt)
                 .requiredHeaders(requiredHeaders)
                 .thumbnailImageId(thumbnailImageId)
+                .originalWidth(originalWidth)
+                .originalHeight(originalHeight)
+                .thumbnailWidth(thumbnailWidth)
+                .thumbnailHeight(thumbnailHeight)
                 .build();
     }
 
@@ -62,17 +79,4 @@ public interface ImageMapper {
                 .expiresAt(expiresAt)
                 .build();
     }
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "objectName", ignore = true)
-    @Mapping(target = "bucketName", ignore = true)
-    @Mapping(target = "category", ignore = true)
-    @Mapping(target = "thumbnailImageId", ignore = true)
-    @Mapping(target = "thumbnailWidth", ignore = true)
-    @Mapping(target = "thumbnailHeight", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "status", constant = "CONFIRMED")
-    @Mapping(target = "confirmedAt", expression = "java(Instant.now())")
-    void updateOnConfirm(@MappingTarget Image image, Long fileSize, String contentType, String fileName);
 }

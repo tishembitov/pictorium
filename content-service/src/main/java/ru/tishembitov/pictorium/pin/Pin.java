@@ -50,6 +50,18 @@ public class Pin {
     @Column(length = 100)
     private String videoPreviewId;
 
+    @Column(nullable = false)
+    private Integer originalWidth;
+
+    @Column(nullable = false)
+    private Integer originalHeight;
+
+    @Column(nullable = false)
+    private Integer thumbnailWidth;
+
+    @Column(nullable = false)
+    private Integer thumbnailHeight;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -57,7 +69,6 @@ public class Pin {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
-
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(

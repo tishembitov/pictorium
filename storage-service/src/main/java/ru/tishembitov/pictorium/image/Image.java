@@ -8,6 +8,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
+// storage-service/src/main/java/ru/tishembitov/pictorium/image/Image.java
+
 @Entity
 @Table(name = "image", indexes = {
         @Index(name = "idx_image_status", columnList = "status"),
@@ -33,11 +35,8 @@ public class Image {
     private String bucketName;
 
     private String fileName;
-
     private String contentType;
-
     private Long fileSize;
-
     private String category;
 
     @Enumerated(EnumType.STRING)
@@ -46,9 +45,11 @@ public class Image {
 
     private String thumbnailImageId;
 
-    private Integer thumbnailWidth;
+    @Column(nullable = false)
+    private Integer width;
 
-    private Integer thumbnailHeight;
+    @Column(nullable = false)
+    private Integer height;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

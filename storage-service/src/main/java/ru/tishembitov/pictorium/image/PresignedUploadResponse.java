@@ -18,4 +18,10 @@ public class PresignedUploadResponse {
     private Long expiresAt;
     private Map<String, String> requiredHeaders;
     private String thumbnailImageId;
+
+    private Integer originalWidth;
+    private Integer originalHeight;
+
+    private Integer thumbnailWidth;
+    private Integer thumbnailHeight;
 }

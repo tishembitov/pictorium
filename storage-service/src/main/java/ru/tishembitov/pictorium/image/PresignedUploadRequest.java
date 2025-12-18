@@ -27,14 +27,19 @@ public class PresignedUploadRequest {
 
     private String category;
 
+    @NotNull(message = "Original width is required")
+    @Min(value = 1, message = "Original width must be positive")
+    private Integer originalWidth;
+
+    @NotNull(message = "Original height is required")
+    @Min(value = 1, message = "Original height must be positive")
+    private Integer originalHeight;
+
     @Builder.Default
-    private boolean generateThumbnail = false;
+    private boolean generateThumbnail = true;
 
     @Min(value = 50, message = "Thumbnail width must be at least 50")
-    @Max(value = 1000, message = "Thumbnail width must not exceed 1000")
-    private Integer thumbnailWidth;
-
-    @Min(value = 50, message = "Thumbnail height must be at least 50")
-    @Max(value = 1000, message = "Thumbnail height must not exceed 1000")
-    private Integer thumbnailHeight;
+    @Max(value = 500, message = "Thumbnail width must not exceed 500")
+    @Builder.Default
+    private Integer thumbnailWidth = 236;
 }

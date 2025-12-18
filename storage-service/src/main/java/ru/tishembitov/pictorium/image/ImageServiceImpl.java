@@ -1,6 +1,3 @@
-// ================================================
-// FILE: ImageServiceImpl.java
-// ================================================
 package ru.tishembitov.pictorium.image;
 
 import io.minio.*;
@@ -18,7 +15,10 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -32,7 +32,7 @@ public class ImageServiceImpl implements ImageService {
     private final ThumbnailService thumbnailService;
     private final ImageUrlService imageUrlService;
 
-    @Value("${image-storage.max-file-size:10485760}")
+    @Value("${image-storage.max-file-size:20971520}")
     private long maxFileSize;
 
     @Value("${image-storage.allowed-content-types:image/jpeg,image/jpg,image/png,image/gif,image/webp}")
@@ -47,8 +47,8 @@ public class ImageServiceImpl implements ImageService {
     @Value("${image-storage.thumbnail.default-width:236}")
     private int defaultThumbnailWidth;
 
-    @Value("${image-storage.thumbnail.default-height:350}")
-    private int defaultThumbnailHeight;
+    @Value("${image-storage.thumbnail.max-height:600}")
+    private int defaultMaxThumbnailHeight;
 
     @Override
     @Transactional
@@ -65,8 +65,24 @@ public class ImageServiceImpl implements ImageService {
 
         Image record = imageMapper.toEntity(request, imageId, objectName, minioProperties.getBucketName());
 
+        // Вычисляем размеры thumbnail заранее
+        Integer thumbnailWidth = null;
+        Integer thumbnailHeight = null;
+
         if (request.isGenerateThumbnail() && hasThumbnailBucket()) {
-            setupThumbnailGeneration(record, request);
+            thumbnailWidth = request.getThumbnailWidth() != null
+                    ? request.getThumbnailWidth()
+                    : defaultThumbnailWidth;
+            thumbnailHeight = thumbnailService.calculateThumbnailHeight(
+                    request.getOriginalWidth(),
+                    request.getOriginalHeight(),
+                    thumbnailWidth
+            );
+
+            String thumbnailImageId = generateImageId();
+            record.setThumbnailImageId(thumbnailImageId);
+
+            log.info("Thumbnail pre-calculated: {}x{}", thumbnailWidth, thumbnailHeight);
         }
 
         imageRepository.save(record);
@@ -74,11 +90,23 @@ public class ImageServiceImpl implements ImageService {
         long expiresAt = imageUrlService.calculateExpiryTimestamp(presignedUploadExpiryMinutes);
         Map<String, String> headers = Map.of("Content-Type", request.getContentType());
 
-        log.info("Generated presigned upload URL. ImageId: {}, ThumbnailId: {}",
-                imageId, record.getThumbnailImageId());
+        log.info("Generated presigned upload URL. ImageId: {}, dimensions: {}x{}, thumbnail: {}x{}",
+                imageId,
+                request.getOriginalWidth(),
+                request.getOriginalHeight(),
+                thumbnailWidth,
+                thumbnailHeight);
 
         return imageMapper.toPresignedResponse(
-                imageId, uploadUrl, expiresAt, headers, record.getThumbnailImageId()
+                imageId,
+                uploadUrl,
+                expiresAt,
+                headers,
+                record.getThumbnailImageId(),
+                request.getOriginalWidth(),
+                request.getOriginalHeight(),
+                thumbnailWidth,
+                thumbnailHeight
         );
     }
 
@@ -100,20 +128,31 @@ public class ImageServiceImpl implements ImageService {
             StatObjectResponse stat = verifyObjectExistsInMinio(record);
 
             String fileName = request.getFileName() != null ? request.getFileName() : record.getFileName();
-            imageMapper.updateOnConfirm(record, stat.size(), stat.contentType(), fileName);
+            record.setFileSize(stat.size());
+            record.setContentType(stat.contentType());
+            record.setFileName(fileName);
+            record.setStatus(Image.ImageStatus.CONFIRMED);
+            record.setConfirmedAt(Instant.now());
 
-            if (shouldGenerateThumbnail(record)) {
-                generateAndSaveThumbnail(record);
+            Integer thumbnailWidth = null;
+            Integer thumbnailHeight = null;
+
+            if (record.getThumbnailImageId() != null && hasThumbnailBucket()) {
+               ThumbnailResult thumbResult = generateAndSaveThumbnail(record);
+                if (thumbResult != null) {
+                    thumbnailWidth = thumbResult.width();
+                    thumbnailHeight = thumbResult.height();
+                }
             }
 
             imageRepository.save(record);
             log.info("Upload confirmed. ImageId: {}", request.getImageId());
 
-            return buildConfirmResponse(record);
+            return buildConfirmResponse(record, thumbnailWidth, thumbnailHeight);
 
         } catch (ErrorResponseException e) {
             if ("NoSuchKey".equals(e.errorResponse().code())) {
-                throw new ImageNotFoundException("Image file not found in storage. Upload may have failed.");
+                throw new ImageNotFoundException("Image file not found in storage.");
             }
             throw new ImageStorageException("Failed to verify upload", e);
         } catch (ImageNotFoundException | ImageStorageException e) {
@@ -220,26 +259,7 @@ public class ImageServiceImpl implements ImageService {
         }
     }
 
-    private void setupThumbnailGeneration(Image record, PresignedUploadRequest request) {
-        String thumbnailImageId = generateImageId();
-        record.setThumbnailImageId(thumbnailImageId);
-
-        record.setThumbnailWidth(
-                request.getThumbnailWidth() != null ? request.getThumbnailWidth() : defaultThumbnailWidth
-        );
-        record.setThumbnailHeight(
-                request.getThumbnailHeight() != null ? request.getThumbnailHeight() : defaultThumbnailHeight
-        );
-
-        log.info("Thumbnail configured. Id: {}, dimensions: {}x{}",
-                thumbnailImageId, record.getThumbnailWidth(), record.getThumbnailHeight());
-    }
-
-    private boolean shouldGenerateThumbnail(Image record) {
-        return record.getThumbnailImageId() != null && hasThumbnailBucket();
-    }
-
-    private void generateAndSaveThumbnail(Image record) {
+    private ThumbnailResult generateAndSaveThumbnail(Image record) {
         log.info("Generating thumbnail for image: {}", record.getId());
 
         try (InputStream originalStream = minioClient.getObject(
@@ -248,10 +268,11 @@ public class ImageServiceImpl implements ImageService {
                         .object(record.getObjectName())
                         .build()
         )) {
-            byte[] thumbnailBytes = thumbnailService.generateThumbnail(
+           ThumbnailResult result = thumbnailService.generateThumbnail(
                     originalStream,
-                    record.getThumbnailWidth(),
-                    record.getThumbnailHeight()
+                    record.getWidth(),
+                    record.getHeight(),
+                    defaultThumbnailWidth
             );
 
             String thumbnailObjectName = buildObjectName(
@@ -264,7 +285,7 @@ public class ImageServiceImpl implements ImageService {
                     PutObjectArgs.builder()
                             .bucket(minioProperties.getThumbnailBucket())
                             .object(thumbnailObjectName)
-                            .stream(new ByteArrayInputStream(thumbnailBytes), thumbnailBytes.length, -1)
+                            .stream(new ByteArrayInputStream(result.data()), result.data().length, -1)
                             .contentType("image/jpeg")
                             .build()
             );
@@ -275,24 +296,37 @@ public class ImageServiceImpl implements ImageService {
                     .bucketName(minioProperties.getThumbnailBucket())
                     .fileName("thumb_" + record.getFileName())
                     .contentType("image/jpeg")
-                    .fileSize((long) thumbnailBytes.length)
+                    .fileSize((long) result.data().length)
                     .category(record.getCategory())
+                    .width(result.width())
+                    .height(result.height())
                     .status(Image.ImageStatus.CONFIRMED)
                     .confirmedAt(Instant.now())
                     .build();
 
             imageRepository.save(thumbnailRecord);
 
-            log.info("Thumbnail generated successfully. Id: {}, size: {} bytes",
-                    record.getThumbnailImageId(), thumbnailBytes.length);
+            log.info("Thumbnail generated: {}x{}, size: {} bytes",
+                    result.width(), result.height(), result.data().length);
+
+            return result;
 
         } catch (Exception e) {
             log.error("Failed to generate thumbnail for image: {}", record.getId(), e);
             record.setThumbnailImageId(null);
+            return null;
         }
     }
 
     private ConfirmUploadResponse buildConfirmResponse(Image record) {
+        return buildConfirmResponse(record, null, null);
+    }
+
+    private ConfirmUploadResponse buildConfirmResponse(
+            Image record,
+            Integer thumbnailWidth,
+            Integer thumbnailHeight
+    ) {
         String imageUrl = imageUrlService.generatePresignedGetUrlSafely(
                 record.getBucketName(),
                 record.getObjectName(),
@@ -301,29 +335,29 @@ public class ImageServiceImpl implements ImageService {
 
         String thumbnailUrl = null;
         if (record.getThumbnailImageId() != null) {
-            // Нужно получить данные миниатюры из БД
-            thumbnailUrl = imageRepository.findById(record.getThumbnailImageId())
-                    .map(thumb -> imageUrlService.generatePresignedGetUrlSafely(
-                            thumb.getBucketName(),
-                            thumb.getObjectName(),
-                            null
-                    ))
-                    .orElse(null);
+            Image thumbRecord = imageRepository.findById(record.getThumbnailImageId()).orElse(null);
+            if (thumbRecord != null) {
+                thumbnailUrl = imageUrlService.generatePresignedGetUrlSafely(
+                        thumbRecord.getBucketName(),
+                        thumbRecord.getObjectName(),
+                        null
+                );
+                if (thumbnailWidth == null) {
+                    thumbnailWidth = thumbRecord.getWidth();
+                }
+                if (thumbnailHeight == null) {
+                    thumbnailHeight = thumbRecord.getHeight();
+                }
+            }
         }
 
-        return imageMapper.toConfirmResponse(record, imageUrl, thumbnailUrl);
-    }
-
-    private void deleteThumbnailSafely(String thumbnailImageId) {
-        imageRepository.findById(thumbnailImageId).ifPresent(thumbnail -> {
-            try {
-                deleteFromMinio(thumbnail.getBucketName(), thumbnail.getObjectName());
-                thumbnail.setStatus(Image.ImageStatus.DELETED);
-                imageRepository.save(thumbnail);
-            } catch (Exception e) {
-                log.warn("Failed to delete thumbnail: {}", thumbnailImageId, e);
-            }
-        });
+        return imageMapper.toConfirmResponse(
+                record,
+                imageUrl,
+                thumbnailUrl,
+                thumbnailWidth,
+                thumbnailHeight
+        );
     }
 
     private String generateImageId() {
@@ -381,5 +415,17 @@ public class ImageServiceImpl implements ImageService {
                         .object(objectName)
                         .build()
         );
+    }
+
+    private void deleteThumbnailSafely(String thumbnailImageId) {
+        imageRepository.findById(thumbnailImageId).ifPresent(thumbnail -> {
+            try {
+                deleteFromMinio(thumbnail.getBucketName(), thumbnail.getObjectName());
+                thumbnail.setStatus(Image.ImageStatus.DELETED);
+                imageRepository.save(thumbnail);
+            } catch (Exception e) {
+                log.warn("Failed to delete thumbnail: {}", thumbnailImageId, e);
+            }
+        });
     }
 }

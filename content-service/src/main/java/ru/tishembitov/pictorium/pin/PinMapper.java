@@ -47,5 +47,9 @@ public interface PinMapper {
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "saveCount", ignore = true)
     @Mapping(target = "viewCount", ignore = true)
+    @Mapping(target = "originalWidth", ignore = true)
+    @Mapping(target = "originalHeight", ignore = true)
+    @Mapping(target = "thumbnailWidth", ignore = true)
+    @Mapping(target = "thumbnailHeight", ignore = true)
     void updateEntity(@MappingTarget Pin pin, PinUpdateRequest request);
 }

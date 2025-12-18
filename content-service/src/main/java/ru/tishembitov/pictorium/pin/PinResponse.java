@@ -24,5 +24,10 @@ public record PinResponse(
         Integer saveCount,
         Integer commentCount,
         Integer likeCount,
-        Integer viewCount
+        Integer viewCount,
+
+        Integer originalWidth,
+        Integer originalHeight,
+        Integer thumbnailWidth,
+        Integer thumbnailHeight
 ) {}
