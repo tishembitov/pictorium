@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -16,9 +17,29 @@ public class UserSynchronizer {
     private final UserRepository userRepository;
 
     @Transactional
-    public void createUserFromToken(Jwt jwt) {
+    public void synchronizeUser(Jwt jwt) {
         String id = jwt.getSubject();
         String email = jwt.getClaimAsString("email");
+
+        userRepository.findById(id).ifPresentOrElse(
+                user -> {
+                    if (!Objects.equals(user.getEmail(), email)) {
+                        log.info("Updating email for user {}: {} -> {}",
+                                id, user.getEmail(), email);
+                        user.setEmail(email);
+                        user.setUpdatedAt(Instant.now());
+                        userRepository.save(user);
+                    }
+                    // Важно: username и другие поля профиля НЕ трогаем!
+                },
+                () -> {
+                    // Пользователь не существует - создаём
+                    createNewUser(jwt, id, email);
+                }
+        );
+    }
+
+    private void createNewUser(Jwt jwt, String id, String email) {
         String username = extractUsername(jwt, email);
 
         log.info("Creating new user from token: id={}, email={}, username={}",
@@ -35,11 +56,7 @@ public class UserSynchronizer {
         userRepository.save(newUser);
     }
 
-    /**
-     * Извлекает username из JWT токена Keycloak
-     */
     private String extractUsername(Jwt jwt, String email) {
-        // Keycloak хранит username в claim "preferred_username"
         String username = jwt.getClaimAsString("preferred_username");
 
         if (username == null || username.isBlank()) {

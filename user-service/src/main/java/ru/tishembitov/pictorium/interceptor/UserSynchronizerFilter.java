@@ -29,7 +29,7 @@ public class UserSynchronizerFilter extends OncePerRequestFilter {
         if (!(SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken)) {
             JwtAuthenticationToken token = ((JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication());
 
-            userSynchronizer.createUserFromToken(token.getToken());
+            userSynchronizer.synchronizeUser(token.getToken());
         }
 
         filterChain.doFilter(request, response);
