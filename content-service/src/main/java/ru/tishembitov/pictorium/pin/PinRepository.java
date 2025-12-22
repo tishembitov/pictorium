@@ -26,14 +26,16 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
     Optional<Pin> findTopByOrderByCreatedAtDesc();
 
     @Query("""
-    SELECT p.id as id,
-           CASE WHEN l.id IS NOT NULL THEN true ELSE false END as liked,
-           CASE WHEN s.id IS NOT NULL THEN true ELSE false END as saved
-    FROM Pin p
-    LEFT JOIN Like l ON l.pin.id = p.id AND l.userId = :userId
-    LEFT JOIN SavedPin s ON s.pin.id = p.id AND s.userId = :userId
-    WHERE p.id IN :pinIds
-""")
+        SELECT p.id as id,
+               CASE WHEN l.id IS NOT NULL THEN true ELSE false END as liked,
+               CASE WHEN EXISTS (
+                   SELECT 1 FROM Board b JOIN b.pins bp 
+                   WHERE b.userId = :userId AND bp.id = p.id
+               ) THEN true ELSE false END as saved
+        FROM Pin p
+        LEFT JOIN Like l ON l.pin.id = p.id AND l.userId = :userId
+        WHERE p.id IN :pinIds
+    """)
     List<PinInteractionProjection> findUserInteractions(
             @Param("userId") String userId,
             @Param("pinIds") Set<UUID> pinIds

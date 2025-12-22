@@ -8,11 +8,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.tishembitov.pictorium.board.BoardRepository;
+import ru.tishembitov.pictorium.board.PinSaveInfoProjection;
 import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
-import ru.tishembitov.pictorium.util.SecurityUtils;
+import ru.tishembitov.pictorium.like.LikeRepository;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
+import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -25,6 +28,8 @@ import java.util.stream.Collectors;
 public class PinServiceImpl implements PinService {
 
     private final PinRepository pinRepository;
+    private final LikeRepository likeRepository;
+    private final BoardRepository boardRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
     private final ImageService imageService;
@@ -36,7 +41,7 @@ public class PinServiceImpl implements PinService {
 
         PinInteractionDto interaction = getPinInteractionDto(pinId);
 
-        return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
+        return pinMapper.toResponse(pin, interaction);
     }
 
     @Override
@@ -63,7 +68,7 @@ public class PinServiceImpl implements PinService {
         return pinIds.map(id -> {
             Pin pin = pinMap.get(id);
             PinInteractionDto interaction = interactions.getOrDefault(id, PinInteractionDto.empty());
-            return pinMapper.toResponse(pin, interaction.isLiked(), interaction.isSaved());
+            return pinMapper.toResponse(pin, interaction);
         });
     }
 
@@ -83,7 +88,7 @@ public class PinServiceImpl implements PinService {
 
         log.info("Pin created: {} by user: {}", saved.getId(), currentUserId);
 
-        return pinMapper.toResponse(saved, false, false);
+        return pinMapper.toResponse(saved, PinInteractionDto.empty());
     }
 
     @Override
@@ -116,7 +121,7 @@ public class PinServiceImpl implements PinService {
 
         log.info("Pin updated: {}", pinId);
 
-        return pinMapper.toResponse(updated, interaction.isLiked(), interaction.isSaved());
+        return pinMapper.toResponse(updated, interaction);
     }
 
     @Override
@@ -176,16 +181,29 @@ public class PinServiceImpl implements PinService {
         if (pinIds.isEmpty()) {
             return Collections.emptyMap();
         }
+        Set<UUID> likedPinIds = likeRepository.findLikedPinIds(userId, pinIds);
 
-        List<PinInteractionProjection> projections =
-                pinRepository.findUserInteractions(userId, pinIds);
+        List<PinSaveInfoProjection> saveInfos = boardRepository.findPinSaveInfo(userId, pinIds);
+        Map<UUID, PinSaveInfoProjection> saveInfoMap = saveInfos.stream()
+                .collect(Collectors.toMap(PinSaveInfoProjection::getPinId, p -> p));
 
         Map<UUID, PinInteractionDto> result = new HashMap<>();
-        pinIds.forEach(id -> result.put(id, PinInteractionDto.empty()));
 
-        projections.forEach(proj ->
-                result.put(proj.getId(), new PinInteractionDto(proj.getLiked(), proj.getSaved()))
-        );
+        for (UUID pinId : pinIds) {
+            boolean isLiked = likedPinIds.contains(pinId);
+            PinSaveInfoProjection saveInfo = saveInfoMap.get(pinId);
+
+            if (saveInfo != null) {
+                result.put(pinId, new PinInteractionDto(
+                        isLiked,
+                        true,
+                        saveInfo.getFirstBoardName(),
+                        saveInfo.getBoardCount().intValue()
+                ));
+            } else {
+                result.put(pinId, new PinInteractionDto(isLiked, false, null, 0));
+            }
+        }
 
         return result;
     }

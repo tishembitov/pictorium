@@ -6,12 +6,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.tishembitov.pictorium.board.BoardRepository;
+import ru.tishembitov.pictorium.board.PinSaveInfoProjection;
 import ru.tishembitov.pictorium.comment.*;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.pin.*;
-import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -21,7 +24,7 @@ import java.util.UUID;
 public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
-    private final SavedPinRepository SavedPinRepository;
+    private final BoardRepository boardRepository;
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
     private final PinMapper pinMapper;
@@ -36,17 +39,17 @@ public class LikeServiceImpl implements LikeService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Pin with id " + pinId + " not found"));
 
-        boolean isSaved = SavedPinRepository.existsByUserIdAndPinId(userId, pinId);
-
         if (likeRepository.existsByUserIdAndPinId(userId, pinId)) {
-            return  pinMapper.toResponse(pin, true, isSaved);
+            return buildPinResponse(pin, userId, true);
         }
 
         Like like = likeMapper.toEntity(userId, pin);
         likeRepository.save(like);
         pinRepository.incrementLikeCount(pinId);
 
-        return  pinMapper.toResponse(pin, true, isSaved);
+        log.info("Pin liked: pinId={}, userId={}", pinId, userId);
+
+        return buildPinResponse(pin, userId, true);
     }
 
     @Override
@@ -62,6 +65,8 @@ public class LikeServiceImpl implements LikeService {
 
         likeRepository.delete(like);
         pinRepository.decrementLikeCount(pinId);
+
+        log.info("Pin unliked: pinId={}, userId={}", pinId, userId);
     }
 
     @Override
@@ -92,6 +97,8 @@ public class LikeServiceImpl implements LikeService {
         likeRepository.save(like);
         commentRepository.incrementLikeCount(commentId);
 
+        log.info("Comment liked: commentId={}, userId={}", commentId, userId);
+
         // TODO: Send notification if comment.getUserId() != userId
 
         return commentMapper.toResponse(comment, true);
@@ -110,6 +117,8 @@ public class LikeServiceImpl implements LikeService {
 
         likeRepository.delete(like);
         commentRepository.decrementLikeCount(commentId);
+
+        log.info("Comment unliked: commentId={}, userId={}", commentId, userId);
     }
 
     @Override
@@ -127,4 +136,22 @@ public class LikeServiceImpl implements LikeService {
         return likesPage.map(likeMapper::toResponse);
     }
 
+    private PinResponse buildPinResponse(Pin pin, String userId, boolean isLiked) {
+        List<PinSaveInfoProjection> saveInfos = boardRepository.findPinSaveInfo(userId, Set.of(pin.getId()));
+
+        PinInteractionDto interaction;
+        if (!saveInfos.isEmpty()) {
+            PinSaveInfoProjection saveInfo = saveInfos.get(0);
+            interaction = new PinInteractionDto(
+                    isLiked,
+                    true,
+                    saveInfo.getFirstBoardName(),
+                    saveInfo.getBoardCount().intValue()
+            );
+        } else {
+            interaction = new PinInteractionDto(isLiked, false, null, 0);
+        }
+
+        return pinMapper.toResponse(pin, interaction);
+    }
 }

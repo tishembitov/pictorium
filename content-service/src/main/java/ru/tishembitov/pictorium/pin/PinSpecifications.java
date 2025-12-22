@@ -1,12 +1,9 @@
 package ru.tishembitov.pictorium.pin;
 
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
+import ru.tishembitov.pictorium.board.Board;
 import ru.tishembitov.pictorium.like.Like;
-import ru.tishembitov.pictorium.savedPin.SavedPin;
 import ru.tishembitov.pictorium.tag.Tag;
 
 import java.time.Instant;
@@ -14,7 +11,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class PinSpecifications {
-
 
     public static Specification<Pin> withFilter(PinFilter filter) {
         if (filter == null) {
@@ -64,7 +60,6 @@ public class PinSpecifications {
         return Specification.allOf(specs);
     }
 
-
     public static Specification<Pin> byTextSearch(String query) {
         return (root, criteriaQuery, cb) -> {
             String searchPattern = "%" + query.toLowerCase() + "%";
@@ -73,7 +68,6 @@ public class PinSpecifications {
             return cb.or(titleLike, descLike);
         };
     }
-
 
     public static Specification<Pin> byTags(Set<String> tags) {
         return (root, query, cb) -> {
@@ -92,7 +86,6 @@ public class PinSpecifications {
         };
     }
 
-
     public static Specification<Pin> fetchTags() {
         return (root, query, cb) -> {
             if (query.getResultType() != Long.class && query.getResultType() != long.class) {
@@ -102,20 +95,20 @@ public class PinSpecifications {
         };
     }
 
-
     public static Specification<Pin> byAuthor(String authorId) {
         return (root, query, cb) -> cb.equal(root.get("authorId"), authorId);
     }
 
     public static Specification<Pin> bySavedBy(String userId) {
         return (root, query, cb) -> {
-            Subquery<SavedPin> subquery = query.subquery(SavedPin.class);
-            Root<SavedPin> savedPinRoot = subquery.from(SavedPin.class);
+            Subquery<Board> subquery = query.subquery(Board.class);
+            Root<Board> boardRoot = subquery.from(Board.class);
+            Join<Board, Pin> pinsJoin = boardRoot.join("pins");
 
-            subquery.select(savedPinRoot)
+            subquery.select(boardRoot)
                     .where(
-                            cb.equal(savedPinRoot.get("pin"), root),
-                            cb.equal(savedPinRoot.get("userId"), userId)
+                            cb.equal(pinsJoin.get("id"), root.get("id")),
+                            cb.equal(boardRoot.get("userId"), userId)
                     );
 
             return cb.exists(subquery);
@@ -140,7 +133,6 @@ public class PinSpecifications {
     public static Specification<Pin> byCreatedFrom(Instant createdFrom) {
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom);
     }
-
 
     public static Specification<Pin> byCreatedTo(Instant createdTo) {
         return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdTo);

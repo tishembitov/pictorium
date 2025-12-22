@@ -34,6 +34,13 @@ public class BoardController {
         return ResponseEntity.ok(boards);
     }
 
+    @GetMapping("/me/for-pin/{pinId}")
+    public ResponseEntity<List<BoardWithPinStatusResponse>> getMyBoardsForPin(
+            @PathVariable UUID pinId) {
+        List<BoardWithPinStatusResponse> boards = boardService.getMyBoardsForPin(pinId);
+        return ResponseEntity.ok(boards);
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<BoardResponse>> getUserBoards(@PathVariable String userId) {
         List<BoardResponse> boards = boardService.getUserBoards(userId);
@@ -47,22 +54,40 @@ public class BoardController {
     }
 
     @PostMapping("/{boardId}/pins/{pinId}")
-    public ResponseEntity<Void> addPinToBoard(@PathVariable UUID boardId, @PathVariable UUID pinId) {
-        boardService.addPinToBoard(boardId, pinId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<PinResponse> savePinToBoard(
+            @PathVariable UUID boardId,
+            @PathVariable UUID pinId) {
+        PinResponse response = boardService.savePinToBoard(boardId, pinId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/pins/{pinId}")
+    public ResponseEntity<PinResponse> savePinToBoards(
+            @PathVariable UUID pinId,
+            @RequestBody SavePinToBoardsRequest request) {
+        PinResponse response = boardService.savePinToBoards(pinId, request.boardIds());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping("/{boardId}/pins/{pinId}")
-    public ResponseEntity<Void> removePinFromBoard(@PathVariable UUID boardId, @PathVariable UUID pinId) {
+    public ResponseEntity<Void> removePinFromBoard(
+            @PathVariable UUID boardId,
+            @PathVariable UUID pinId) {
         boardService.removePinFromBoard(boardId, pinId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/pins/{pinId}")
+    public ResponseEntity<Void> removePinFromAllBoards(@PathVariable UUID pinId) {
+        boardService.removePinFromAllBoards(pinId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{boardId}/pins")
     public ResponseEntity<Page<PinResponse>> getBoardPins(
             @PathVariable UUID boardId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable) {
         Page<PinResponse> pins = boardService.getBoardPins(boardId, pageable);
         return ResponseEntity.ok(pins);
     }

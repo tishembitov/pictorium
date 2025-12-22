@@ -16,4 +16,23 @@ public interface BoardMapper {
     BoardResponse toResponse(Board board);
 
     List<BoardResponse> toResponseList(List<Board> boards);
+
+    default BoardWithPinStatusResponse toWithPinStatusResponse(BoardWithPinStatusProjection projection) {
+        return new BoardWithPinStatusResponse(
+                projection.getId(),
+                projection.getUserId(),
+                projection.getTitle(),
+                projection.getCreatedAt(),
+                projection.getUpdatedAt(),
+                projection.getHasPin(),
+                projection.getPinCount()
+        );
+    }
+
+    default List<BoardWithPinStatusResponse> toWithPinStatusResponseList(
+            List<BoardWithPinStatusProjection> projections) {
+        return projections.stream()
+                .map(this::toWithPinStatusResponse)
+                .toList();
+    }
 }

@@ -1,10 +1,10 @@
 package ru.tishembitov.pictorium.board;
 
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import ru.tishembitov.pictorium.pin.PinResponse;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,12 +18,19 @@ public interface BoardService {
 
     BoardResponse getBoardById(UUID boardId);
 
-    void addPinToBoard(UUID boardId, UUID pinId);
+    List<BoardWithPinStatusResponse> getMyBoardsForPin(UUID pinId);
+
+    PinResponse savePinToBoard(UUID boardId, UUID pinId);
+
+    PinResponse savePinToBoards(UUID pinId, List<UUID> boardIds);
 
     void removePinFromBoard(UUID boardId, UUID pinId);
+
+    void removePinFromAllBoards(UUID pinId);
 
     Page<PinResponse> getBoardPins(UUID boardId, Pageable pageable);
 
     void deleteBoard(UUID boardId);
-}
 
+    boolean isPinSavedByCurrentUser(UUID pinId);
+}
