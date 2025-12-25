@@ -11,6 +11,7 @@ import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.like.LikeRepository;
 import ru.tishembitov.pictorium.pin.*;
+import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.*;
@@ -24,6 +25,7 @@ public class BoardServiceImpl implements BoardService {
 
     private final BoardRepository boardRepository;
     private final PinRepository pinRepository;
+    private final SavedPinRepository savedPinRepository;
     private final LikeRepository likeRepository;
     private final BoardMapper boardMapper;
     private final PinMapper pinMapper;
@@ -92,7 +94,7 @@ public class BoardServiceImpl implements BoardService {
                 .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
 
         if (boardRepository.existsPinInBoard(boardId, pinId)) {
-            return buildPinResponse(pin, currentUserId);
+            return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
         }
 
         boolean wasAlreadySaved = boardRepository.isPinSavedByUser(currentUserId, pinId);
@@ -106,7 +108,7 @@ public class BoardServiceImpl implements BoardService {
 
         log.info("Pin saved to board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
 
-        return buildPinResponse(pin, currentUserId);
+        return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }
 
     @Override
@@ -141,7 +143,7 @@ public class BoardServiceImpl implements BoardService {
 
         log.info("Pin saved to {} boards: pinId={}, userId={}", savedCount, pinId, currentUserId);
 
-        return buildPinResponse(pin, currentUserId);
+        return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }
 
     @Override
@@ -160,9 +162,10 @@ public class BoardServiceImpl implements BoardService {
 
         boardRepository.save(board);
 
-        boolean stillSaved = boardRepository.isPinSavedByUser(currentUserId, pinId);
+        boolean stillSavedInBoards = boardRepository.isPinSavedByUser(currentUserId, pinId);
+        boolean savedToProfile = savedPinRepository.existsByUserIdAndPinId(currentUserId, pinId);
 
-        if (!stillSaved) {
+        if (!stillSavedInBoards && !savedToProfile) {
             pinRepository.decrementSaveCount(pinId);
         }
 
@@ -190,7 +193,11 @@ public class BoardServiceImpl implements BoardService {
             boardRepository.save(board);
         }
 
-        pinRepository.decrementSaveCount(pinId);
+        boolean savedToProfile = savedPinRepository.existsByUserIdAndPinId(currentUserId, pinId);
+
+        if (!savedToProfile) {
+            pinRepository.decrementSaveCount(pinId);
+        }
 
         log.info("Pin removed from all boards: pinId={}, userId={}, boardCount={}",
                 pinId, currentUserId, boards.size());
@@ -260,26 +267,5 @@ public class BoardServiceImpl implements BoardService {
         if (!board.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this board");
         }
-    }
-
-    private PinResponse buildPinResponse(Pin pin, String userId) {
-        boolean isLiked = likeRepository.existsByUserIdAndPinId(userId, pin.getId());
-
-        List<PinSaveInfoProjection> saveInfos = boardRepository.findPinSaveInfo(userId, Set.of(pin.getId()));
-
-        PinInteractionDto interaction;
-        if (!saveInfos.isEmpty()) {
-            PinSaveInfoProjection saveInfo = saveInfos.get(0);
-            interaction = new PinInteractionDto(
-                    isLiked,
-                    true,
-                    saveInfo.getFirstBoardName(),
-                    saveInfo.getBoardCount().intValue()
-            );
-        } else {
-            interaction = new PinInteractionDto(isLiked, false, null, 0);
-        }
-
-        return pinMapper.toResponse(pin, interaction);
     }
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import ru.tishembitov.pictorium.board.Board;
 import ru.tishembitov.pictorium.like.Like;
+import ru.tishembitov.pictorium.savedPin.SavedPin;
 import ru.tishembitov.pictorium.tag.Tag;
 
 import java.time.Instant;
@@ -12,16 +13,19 @@ import java.util.stream.Collectors;
 
 public class PinSpecifications {
 
+    private PinSpecifications() {
+    }
+
     public static Specification<Pin> withFilter(PinFilter filter) {
         if (filter == null) {
-            return null;
+            return (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
         }
 
         List<Specification<Pin>> specs = new ArrayList<>();
 
         specs.add(fetchTags());
 
-        if (filter.q() != null && !filter.q().isBlank()) {
+        if (hasText(filter.q())) {
             specs.add(byTextSearch(filter.q()));
         }
 
@@ -29,15 +33,19 @@ public class PinSpecifications {
             specs.add(byTags(filter.tags()));
         }
 
-        if (filter.authorId() != null) {
+        if (hasText(filter.authorId())) {
             specs.add(byAuthor(filter.authorId()));
         }
 
-        if (filter.savedBy() != null) {
-            specs.add(bySavedBy(filter.savedBy()));
+        if (hasText(filter.savedBy())) {
+            specs.add(bySavedToBoards(filter.savedBy()));
         }
 
-        if (filter.likedBy() != null) {
+        if (hasText(filter.savedToProfileBy())) {
+            specs.add(bySavedToProfile(filter.savedToProfileBy()));
+        }
+
+        if (hasText(filter.likedBy())) {
             specs.add(byLikedBy(filter.likedBy()));
         }
 
@@ -62,27 +70,27 @@ public class PinSpecifications {
 
     public static Specification<Pin> byTextSearch(String query) {
         return (root, criteriaQuery, cb) -> {
-            String searchPattern = "%" + query.toLowerCase() + "%";
-            var titleLike = cb.like(cb.lower(root.get("title")), searchPattern);
-            var descLike = cb.like(cb.lower(root.get("description")), searchPattern);
+            String searchPattern = "%" + query.toLowerCase().trim() + "%";
+            Predicate titleLike = cb.like(cb.lower(root.get("title")), searchPattern);
+            Predicate descLike = cb.like(cb.lower(root.get("description")), searchPattern);
             return cb.or(titleLike, descLike);
         };
     }
 
     public static Specification<Pin> byTags(Set<String> tags) {
         return (root, query, cb) -> {
-            Set<String> lower = tags.stream()
+            Set<String> normalizedTags = tags.stream()
                     .filter(Objects::nonNull)
-                    .map(s -> s.toLowerCase(Locale.ROOT))
+                    .map(s -> s.toLowerCase(Locale.ROOT).trim())
+                    .filter(s -> !s.isEmpty())
                     .collect(Collectors.toSet());
 
-            if (lower.isEmpty()) {
+            if (normalizedTags.isEmpty()) {
                 return cb.conjunction();
             }
 
             Join<Pin, Tag> tagJoin = root.join("tags", JoinType.INNER);
-            query.distinct(true);
-            return cb.lower(tagJoin.get("name")).in(lower);
+            return cb.lower(tagJoin.get("name")).in(normalizedTags);
         };
     }
 
@@ -99,34 +107,60 @@ public class PinSpecifications {
         return (root, query, cb) -> cb.equal(root.get("authorId"), authorId);
     }
 
-    public static Specification<Pin> bySavedBy(String userId) {
+    public static Specification<Pin> bySavedToBoards(String userId) {
         return (root, query, cb) -> {
-            Subquery<Board> subquery = query.subquery(Board.class);
+            Subquery<UUID> subquery = query.subquery(UUID.class);
             Root<Board> boardRoot = subquery.from(Board.class);
             Join<Board, Pin> pinsJoin = boardRoot.join("pins");
 
-            subquery.select(boardRoot)
-                    .where(
-                            cb.equal(pinsJoin.get("id"), root.get("id")),
-                            cb.equal(boardRoot.get("userId"), userId)
-                    );
+            subquery.select(pinsJoin.get("id"))
+                    .where(cb.equal(boardRoot.get("userId"), userId));
 
-            return cb.exists(subquery);
+            return root.get("id").in(subquery);
+        };
+    }
+
+    public static Specification<Pin> bySavedToProfile(String userId) {
+        return (root, query, cb) -> {
+            Subquery<UUID> subquery = query.subquery(UUID.class);
+            Root<SavedPin> savedRoot = subquery.from(SavedPin.class);
+
+            subquery.select(savedRoot.get("pin").get("id"))
+                    .where(cb.equal(savedRoot.get("userId"), userId));
+
+            return root.get("id").in(subquery);
+        };
+    }
+
+    public static Specification<Pin> bySavedAnywhere(String userId) {
+        return (root, query, cb) -> {
+            Subquery<UUID> boardSubquery = query.subquery(UUID.class);
+            Root<Board> boardRoot = boardSubquery.from(Board.class);
+            Join<Board, Pin> boardPinsJoin = boardRoot.join("pins");
+            boardSubquery.select(boardPinsJoin.get("id"))
+                    .where(cb.equal(boardRoot.get("userId"), userId));
+
+            Subquery<UUID> profileSubquery = query.subquery(UUID.class);
+            Root<SavedPin> savedRoot = profileSubquery.from(SavedPin.class);
+            profileSubquery.select(savedRoot.get("pin").get("id"))
+                    .where(cb.equal(savedRoot.get("userId"), userId));
+
+            return cb.or(
+                    root.get("id").in(boardSubquery),
+                    root.get("id").in(profileSubquery)
+            );
         };
     }
 
     public static Specification<Pin> byLikedBy(String userId) {
         return (root, query, cb) -> {
-            Subquery<Like> subquery = query.subquery(Like.class);
+            Subquery<UUID> subquery = query.subquery(UUID.class);
             Root<Like> likeRoot = subquery.from(Like.class);
 
-            subquery.select(likeRoot)
-                    .where(
-                            cb.equal(likeRoot.get("pin"), root),
-                            cb.equal(likeRoot.get("userId"), userId)
-                    );
+            subquery.select(likeRoot.get("pin").get("id"))
+                    .where(cb.equal(likeRoot.get("userId"), userId));
 
-            return cb.exists(subquery);
+            return root.get("id").in(subquery);
         };
     }
 
@@ -138,24 +172,21 @@ public class PinSpecifications {
         return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdTo);
     }
 
+
     public static Specification<Pin> byRelatedTo(UUID pinId) {
         return (root, query, cb) -> {
-            query.distinct(true);
+            Subquery<UUID> tagSubquery = query.subquery(UUID.class);
+            Root<Pin> sourcePin = tagSubquery.from(Pin.class);
+            Join<Pin, Tag> sourceTags = sourcePin.join("tags", JoinType.INNER);
 
-            Subquery<Tag> sq = query.subquery(Tag.class);
-            Root<Pin> p = sq.from(Pin.class);
-            Join<Pin, Tag> tSource = p.join("tags", JoinType.INNER);
-            Join<Pin, Tag> tCandidate = root.join("tags", JoinType.INNER);
+            tagSubquery.select(sourceTags.get("id"))
+                    .where(cb.equal(sourcePin.get("id"), pinId));
 
-            sq.select(tSource)
-                    .where(
-                            cb.equal(p.get("id"), pinId),
-                            cb.equal(tSource.get("id"), tCandidate.get("id"))
-                    );
+            Join<Pin, Tag> candidateTags = root.join("tags", JoinType.INNER);
 
             return cb.and(
                     cb.notEqual(root.get("id"), pinId),
-                    cb.exists(sq)
+                    candidateTags.get("id").in(tagSubquery)
             );
         };
     }
@@ -168,6 +199,13 @@ public class PinSpecifications {
     }
 
     public static boolean needsDistinct(PinFilter filter) {
-        return filter.tags() != null || filter.relatedTo() != null;
+        if (filter == null) return false;
+
+        return (filter.tags() != null && !filter.tags().isEmpty())
+                || filter.relatedTo() != null;
+    }
+
+    private static boolean hasText(String str) {
+        return str != null && !str.isBlank();
     }
 }

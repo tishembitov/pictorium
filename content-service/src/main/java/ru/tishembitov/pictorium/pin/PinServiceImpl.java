@@ -234,34 +234,74 @@ public class PinServiceImpl implements PinService {
     }
 
     private PinFilter normalizeScope(PinFilter filter) {
-        if (filter == null || filter.scope() == null || filter.scope() == Scope.ALL) {
+        if (filter == null) {
+            return PinFilter.empty();
+        }
+
+        if (filter.scope() == null || filter.scope() == Scope.ALL) {
             return filter;
         }
 
         return switch (filter.scope()) {
-            case CREATED -> filter
-                    .withAuthorId(filter.authorId() != null
-                            ? filter.authorId()
-                            : SecurityUtils.requireCurrentUserId())
-                    .withSavedBy(null)
-                    .withLikedBy(null)
-                    .withRelatedTo(null);
+            case CREATED -> {
+                String authorId = filter.authorId() != null
+                        ? filter.authorId()
+                        : SecurityUtils.requireCurrentUserId();
+                yield filter
+                        .withAuthorId(authorId)
+                        .withSavedBy(null)
+                        .withSavedToProfileBy(null)
+                        .withLikedBy(null)
+                        .withRelatedTo(null);
+            }
 
-            case SAVED -> filter
-                    .withAuthorId(null)
-                    .withSavedBy(filter.savedBy() != null
-                            ? filter.savedBy()
-                            : SecurityUtils.requireCurrentUserId())
-                    .withLikedBy(null)
-                    .withRelatedTo(null);
+            case SAVED -> {
+                String savedBy = filter.savedBy() != null
+                        ? filter.savedBy()
+                        : SecurityUtils.requireCurrentUserId();
+                yield filter
+                        .withAuthorId(null)
+                        .withSavedBy(savedBy)
+                        .withSavedToProfileBy(null)
+                        .withLikedBy(null)
+                        .withRelatedTo(null);
+            }
 
-            case LIKED -> filter
-                    .withAuthorId(null)
-                    .withSavedBy(null)
-                    .withLikedBy(filter.likedBy() != null
-                            ? filter.likedBy()
-                            : SecurityUtils.requireCurrentUserId())
-                    .withRelatedTo(null);
+            case SAVED_TO_PROFILE -> {
+                String savedToProfileBy = filter.savedToProfileBy() != null
+                        ? filter.savedToProfileBy()
+                        : SecurityUtils.requireCurrentUserId();
+                yield filter
+                        .withAuthorId(null)
+                        .withSavedBy(null)
+                        .withSavedToProfileBy(savedToProfileBy)
+                        .withLikedBy(null)
+                        .withRelatedTo(null);
+            }
+
+            case SAVED_ALL -> {
+                String userId = filter.savedBy() != null
+                        ? filter.savedBy()
+                        : SecurityUtils.requireCurrentUserId();
+                yield filter
+                        .withAuthorId(null)
+                        .withSavedBy(userId)
+                        .withSavedToProfileBy(userId)
+                        .withLikedBy(null)
+                        .withRelatedTo(null);
+            }
+
+            case LIKED -> {
+                String likedBy = filter.likedBy() != null
+                        ? filter.likedBy()
+                        : SecurityUtils.requireCurrentUserId();
+                yield filter
+                        .withAuthorId(null)
+                        .withSavedBy(null)
+                        .withSavedToProfileBy(null)
+                        .withLikedBy(likedBy)
+                        .withRelatedTo(null);
+            }
 
             case RELATED -> {
                 if (filter.relatedTo() == null) {
@@ -272,8 +312,10 @@ public class PinServiceImpl implements PinService {
                 yield filter
                         .withAuthorId(null)
                         .withSavedBy(null)
+                        .withSavedToProfileBy(null)
                         .withLikedBy(null);
             }
+
             default -> filter;
         };
     }
