@@ -21,4 +21,6 @@ public interface PinService {
 
     Map<UUID, PinInteractionDto> getPinInteractionDtosBatch(Set<UUID> pinIds);
 
+    PinInteractionDto getPinInteractionDto(UUID pinId);
+
 }

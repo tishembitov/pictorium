@@ -28,6 +28,7 @@ public class LikeServiceImpl implements LikeService {
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
     private final PinMapper pinMapper;
+    private final PinService pinService;
     private final CommentMapper commentMapper;
     private final LikeMapper likeMapper;
 
@@ -40,7 +41,7 @@ public class LikeServiceImpl implements LikeService {
                         "Pin with id " + pinId + " not found"));
 
         if (likeRepository.existsByUserIdAndPinId(userId, pinId)) {
-            return buildPinResponse(pin, userId, true);
+            return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
         }
 
         Like like = likeMapper.toEntity(userId, pin);
@@ -49,7 +50,7 @@ public class LikeServiceImpl implements LikeService {
 
         log.info("Pin liked: pinId={}, userId={}", pinId, userId);
 
-        return buildPinResponse(pin, userId, true);
+        return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }
 
     @Override
@@ -134,24 +135,5 @@ public class LikeServiceImpl implements LikeService {
         );
 
         return likesPage.map(likeMapper::toResponse);
-    }
-
-    private PinResponse buildPinResponse(Pin pin, String userId, boolean isLiked) {
-        List<PinSaveInfoProjection> saveInfos = boardRepository.findPinSaveInfo(userId, Set.of(pin.getId()));
-
-        PinInteractionDto interaction;
-        if (!saveInfos.isEmpty()) {
-            PinSaveInfoProjection saveInfo = saveInfos.get(0);
-            interaction = new PinInteractionDto(
-                    isLiked,
-                    true,
-                    saveInfo.getFirstBoardName(),
-                    saveInfo.getBoardCount().intValue()
-            );
-        } else {
-            interaction = new PinInteractionDto(isLiked, false, null, 0);
-        }
-
-        return pinMapper.toResponse(pin, interaction);
     }
 }

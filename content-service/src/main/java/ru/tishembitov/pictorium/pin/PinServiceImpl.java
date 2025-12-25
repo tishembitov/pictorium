@@ -13,6 +13,7 @@ import ru.tishembitov.pictorium.board.PinSaveInfoProjection;
 import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.like.LikeRepository;
+import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
 import ru.tishembitov.pictorium.util.SecurityUtils;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 public class PinServiceImpl implements PinService {
 
     private final PinRepository pinRepository;
+    private final SavedPinRepository savedPinRepository;
     private final LikeRepository likeRepository;
     private final BoardRepository boardRepository;
     private final PinMapper pinMapper;
@@ -150,24 +152,8 @@ public class PinServiceImpl implements PinService {
                 .orElseGet(() -> createEmptyInteractions(pinIds));
     }
 
-    private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {
-        if (newId == null) {
-            return;
-        }
-
-        if (newId.isBlank()) {
-            imageService.deleteImageSafely(currentId);
-            setter.accept(null);
-            return;
-        }
-
-        if (!newId.equals(currentId)) {
-            imageService.deleteImageSafely(currentId);
-            setter.accept(newId);
-        }
-    }
-
-    private PinInteractionDto getPinInteractionDto(UUID pinId) {
+    @Override
+    public PinInteractionDto getPinInteractionDto(UUID pinId) {
         return SecurityUtils.getCurrentUserId()
                 .map(userId -> {
                     Map<UUID, PinInteractionDto> interactions =
@@ -181,27 +167,35 @@ public class PinServiceImpl implements PinService {
         if (pinIds.isEmpty()) {
             return Collections.emptyMap();
         }
+
         Set<UUID> likedPinIds = likeRepository.findLikedPinIds(userId, pinIds);
 
-        List<PinSaveInfoProjection> saveInfos = boardRepository.findPinSaveInfo(userId, pinIds);
-        Map<UUID, PinSaveInfoProjection> saveInfoMap = saveInfos.stream()
+        Set<UUID> savedToProfileIds = savedPinRepository.findSavedToProfilePinIds(userId, pinIds);
+
+        List<PinSaveInfoProjection> boardSaveInfos = boardRepository.findPinSaveInfo(userId, pinIds);
+        Map<UUID, PinSaveInfoProjection> boardSaveMap = boardSaveInfos.stream()
                 .collect(Collectors.toMap(PinSaveInfoProjection::getPinId, p -> p));
 
         Map<UUID, PinInteractionDto> result = new HashMap<>();
 
         for (UUID pinId : pinIds) {
             boolean isLiked = likedPinIds.contains(pinId);
-            PinSaveInfoProjection saveInfo = saveInfoMap.get(pinId);
+            boolean isSavedToProfile = savedToProfileIds.contains(pinId);
+            PinSaveInfoProjection boardInfo = boardSaveMap.get(pinId);
 
-            if (saveInfo != null) {
+            boolean isSavedToBoards = boardInfo != null;
+            boolean isSaved = isSavedToProfile || isSavedToBoards;
+
+            if (isSaved) {
                 result.put(pinId, new PinInteractionDto(
                         isLiked,
                         true,
-                        saveInfo.getFirstBoardName(),
-                        saveInfo.getBoardCount().intValue()
+                        isSavedToProfile,
+                        isSavedToBoards ? boardInfo.getFirstBoardName() : null,
+                        isSavedToBoards ? boardInfo.getBoardCount().intValue() : 0
                 ));
             } else {
-                result.put(pinId, new PinInteractionDto(isLiked, false, null, 0));
+                result.put(pinId, PinInteractionDto.notSaved(isLiked));
             }
         }
 
@@ -219,6 +213,23 @@ public class PinServiceImpl implements PinService {
     private void checkPinOwnership(Pin pin, String userId) {
         if (!pin.getAuthorId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this pin");
+        }
+    }
+
+    private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {
+        if (newId == null) {
+            return;
+        }
+
+        if (newId.isBlank()) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(null);
+            return;
+        }
+
+        if (!newId.equals(currentId)) {
+            imageService.deleteImageSafely(currentId);
+            setter.accept(newId);
         }
     }
 
