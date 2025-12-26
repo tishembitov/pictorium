@@ -2,8 +2,6 @@ package ru.tishembitov.pictorium.savedPin;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.board.BoardRepository;
@@ -11,10 +9,7 @@ import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.pin.*;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -80,36 +75,6 @@ public class SavedPinServiceImpl implements SavedPinService{
         }
 
         log.info("Pin unsaved from profile: pinId={}, userId={}", pinId, currentUserId);
-    }
-
-    @Override
-    public Page<PinResponse> getSavedToProfilePins(String userId, Pageable pageable) {
-        Page<Pin> pins = savedPinRepository.findSavedPinsByUserId(userId, pageable);
-
-        if (pins.isEmpty()) {
-            return Page.empty(pageable);
-        }
-
-        Set<UUID> pinIds = pins.getContent().stream()
-                .map(Pin::getId)
-                .collect(Collectors.toSet());
-
-        Map<UUID, PinInteractionDto> interactions = pinService.getPinInteractionDtosBatch(pinIds);
-
-        return pins.map(pin -> {
-            PinInteractionDto interaction = interactions.getOrDefault(
-                    pin.getId(),
-                    PinInteractionDto.empty()
-            );
-            return pinMapper.toResponse(pin, interaction);
-        });
-    }
-
-    @Override
-    public boolean isPinSavedToProfile(UUID pinId) {
-        return SecurityUtils.getCurrentUserId()
-                .map(userId -> savedPinRepository.existsByUserIdAndPinId(userId, pinId))
-                .orElse(false);
     }
 
     private boolean isPinSavedByUser(String userId, UUID pinId) {
