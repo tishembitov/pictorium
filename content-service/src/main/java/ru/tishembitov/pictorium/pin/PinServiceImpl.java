@@ -283,12 +283,7 @@ public class PinServiceImpl implements PinService {
                 String userId = filter.savedBy() != null
                         ? filter.savedBy()
                         : SecurityUtils.requireCurrentUserId();
-                yield filter
-                        .withAuthorId(null)
-                        .withSavedBy(userId)
-                        .withSavedToProfileBy(userId)
-                        .withLikedBy(null)
-                        .withRelatedTo(null);
+                yield filter.withSavedAnywhere(userId);
             }
 
             case LIKED -> {

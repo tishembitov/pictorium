@@ -45,6 +45,10 @@ public class PinSpecifications {
             specs.add(bySavedToProfile(filter.savedToProfileBy()));
         }
 
+        if (hasText(filter.savedAnywhere())) {
+            specs.add(bySavedAnywhere(filter.savedAnywhere()));
+        }
+
         if (hasText(filter.likedBy())) {
             specs.add(byLikedBy(filter.likedBy()));
         }

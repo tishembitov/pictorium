@@ -13,6 +13,7 @@ public record PinFilter(
         String authorId,
         String savedBy,
         String savedToProfileBy,
+        String savedAnywhere,
         String likedBy,
         UUID relatedTo,
         Instant createdFrom,
@@ -21,6 +22,6 @@ public record PinFilter(
 ) {
 
     public static PinFilter empty() {
-        return new PinFilter(null, null, null, null, null, null, null, null, null, null);
+        return new PinFilter(null, null, null, null, null, null, null, null, null, null, null);
     }
 }
