@@ -71,4 +71,8 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
 
     @Query("SELECT p FROM Board b JOIN b.pins p WHERE b.id = :boardId")
     Page<Pin> findByBoardId(@Param("boardId") UUID boardId, Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Pin p SET p.saveCount = CASE WHEN p.saveCount > 0 THEN p.saveCount - 1 ELSE 0 END WHERE p.id IN :pinIds")
+    void decrementSaveCountBatch(@Param("pinIds") Set<UUID> pinIds);
 }

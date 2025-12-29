@@ -150,16 +150,15 @@ public class BoardServiceImpl implements BoardService {
     public void removePinFromBoard(UUID boardId, UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        Board board = boardRepository.findByIdAndUserId(boardId, currentUserId)
+        Board board = boardRepository.findByIdWithPinsAndUserId(boardId, currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board not found or access denied"));
 
-        Pin pin = pinRepository.findById(pinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
+        Pin pin = board.getPins().stream()
+                .filter(p -> p.getId().equals(pinId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Pin not found in board"));
 
-        if (!board.getPins().remove(pin)) {
-            throw new ResourceNotFoundException("Pin not found in board");
-        }
-
+        board.getPins().remove(pin);
         boardRepository.save(board);
 
         boolean stillSavedInBoards = boardRepository.isPinSavedByUser(currentUserId, pinId);
@@ -176,21 +175,10 @@ public class BoardServiceImpl implements BoardService {
     public void removePinFromAllBoards(UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        if (!pinRepository.existsById(pinId)) {
-            throw new ResourceNotFoundException("Pin not found with id: " + pinId);
-        }
+        int removedCount = boardRepository.removePinFromUserBoards(currentUserId, pinId);
 
-        List<Board> boards = boardRepository.findBoardsContainingPin(currentUserId, pinId);
-
-        if (boards.isEmpty()) {
+        if (removedCount == 0) {
             throw new ResourceNotFoundException("Pin is not saved in any of your boards");
-        }
-
-        Pin pin = pinRepository.findById(pinId).orElseThrow();
-
-        for (Board board : boards) {
-            board.getPins().remove(pin);
-            boardRepository.save(board);
         }
 
         boolean savedToProfile = savedPinRepository.existsByUserIdAndPinId(currentUserId, pinId);
@@ -200,7 +188,7 @@ public class BoardServiceImpl implements BoardService {
         }
 
         log.info("Pin removed from all boards: pinId={}, userId={}, boardCount={}",
-                pinId, currentUserId, boards.size());
+                pinId, currentUserId, removedCount);
     }
 
     @Override
@@ -241,17 +229,21 @@ public class BoardServiceImpl implements BoardService {
 
         checkBoardOwnership(board, currentUserId);
 
-        for (Pin pin : board.getPins()) {
-            boolean savedElsewhere = boardRepository.findBoardsContainingPin(currentUserId, pin.getId())
-                    .stream()
-                    .anyMatch(b -> !b.getId().equals(boardId));
+        Set<UUID> pinIds = board.getPins().stream()
+                .map(Pin::getId)
+                .collect(Collectors.toSet());
 
-            if (!savedElsewhere) {
-                pinRepository.decrementSaveCount(pin.getId());
+        if (!pinIds.isEmpty()) {
+            Set<UUID> pinsToDecrement = boardRepository.findPinsNotSavedElsewhere(
+                    currentUserId, pinIds, boardId);
+
+            if (!pinsToDecrement.isEmpty()) {
+                pinRepository.decrementSaveCountBatch(pinsToDecrement);
             }
         }
 
         boardRepository.delete(board);
+
         log.info("Board deleted: id={}, userId={}", boardId, currentUserId);
     }
 

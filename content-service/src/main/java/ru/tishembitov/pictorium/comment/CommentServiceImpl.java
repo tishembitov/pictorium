@@ -16,6 +16,7 @@ import ru.tishembitov.pictorium.pin.Pin;
 import ru.tishembitov.pictorium.pin.PinRepository;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -147,16 +148,24 @@ public class CommentServiceImpl implements CommentService {
         String currentUserId = SecurityUtils.requireCurrentUserId();
         checkCommentOwnership(comment, currentUserId);
 
-        imageService.deleteImageSafely(comment.getImageId());
-
         UUID pinId = comment.getPin().getId();
+        boolean isReply = comment.getParentComment() != null;
 
-        if (comment.getParentComment() != null) {
+        if (isReply) {
+            imageService.deleteImageSafely(comment.getImageId());
+
             commentRepository.decrementReplyCount(comment.getParentComment().getId());
             pinRepository.decrementCommentCount(pinId);
         } else {
+
+            List<String> replyImageIds = commentRepository.findImageIdsByParentId(commentId);
+
             long replyCount = commentRepository.countByParentCommentId(commentId);
             long totalToDelete = 1 + replyCount;
+
+            imageService.deleteImageSafely(comment.getImageId());
+            replyImageIds.forEach(imageService::deleteImageSafely);
+
             pinRepository.decrementCommentCountBy(pinId, totalToDelete);
         }
 

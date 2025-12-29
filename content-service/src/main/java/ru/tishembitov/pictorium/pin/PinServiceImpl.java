@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.board.BoardRepository;
 import ru.tishembitov.pictorium.board.PinSaveInfoProjection;
 import ru.tishembitov.pictorium.client.ImageService;
+import ru.tishembitov.pictorium.comment.CommentRepository;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.like.LikeRepository;
 import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
@@ -31,6 +32,7 @@ public class PinServiceImpl implements PinService {
     private final PinRepository pinRepository;
     private final SavedPinRepository savedPinRepository;
     private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
     private final BoardRepository boardRepository;
     private final PinMapper pinMapper;
     private final TagService tagService;
@@ -136,9 +138,13 @@ public class PinServiceImpl implements PinService {
 
         checkPinOwnership(pin, currentUserId);
 
+        List<String> commentImageIds = commentRepository.findImageIdsByPinId(pinId);
+
         imageService.deleteImageSafely(pin.getImageId());
         imageService.deleteImageSafely(pin.getThumbnailId());
         imageService.deleteImageSafely(pin.getVideoPreviewId());
+
+        commentImageIds.forEach(imageService::deleteImageSafely);
 
         pinRepository.delete(pin);
 

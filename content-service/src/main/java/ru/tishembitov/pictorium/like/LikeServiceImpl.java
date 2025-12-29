@@ -57,10 +57,6 @@ public class LikeServiceImpl implements LikeService {
     public void unlikePin(UUID pinId) {
         String userId = SecurityUtils.requireCurrentUserId();
 
-        if (!pinRepository.existsById(pinId)) {
-            throw new ResourceNotFoundException("Pin with id " + pinId + " not found");
-        }
-
         Like like = likeRepository.findByUserIdAndPinId(userId, pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
 
@@ -108,10 +104,6 @@ public class LikeServiceImpl implements LikeService {
     @Override
     public void unlikeComment(UUID commentId) {
         String userId = SecurityUtils.requireCurrentUserId();
-
-        if (!commentRepository.existsById(commentId)) {
-            throw new ResourceNotFoundException("Comment with id " + commentId + " not found");
-        }
 
         Like like = likeRepository.findByUserIdAndCommentId(userId, commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Like not found"));

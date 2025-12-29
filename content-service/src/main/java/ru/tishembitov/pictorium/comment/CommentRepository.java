@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.Modifying;
@@ -35,5 +36,11 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     Page<Comment> findByParentCommentIdOrderByCreatedAtDesc(UUID parentCommentId, Pageable pageable);
 
     Page<Comment> findByPinIdOrderByCreatedAtDesc(UUID pinId, Pageable pageable);
+
+    @Query("SELECT c.imageId FROM Comment c WHERE c.pin.id = :pinId AND c.imageId IS NOT NULL")
+    List<String> findImageIdsByPinId(@Param("pinId") UUID pinId);
+
+    @Query("SELECT c.imageId FROM Comment c WHERE c.parentComment.id = :parentId AND c.imageId IS NOT NULL")
+    List<String> findImageIdsByParentId(@Param("parentId") UUID parentId);
 
 }

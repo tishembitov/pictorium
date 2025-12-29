@@ -1,6 +1,7 @@
 package ru.tishembitov.pictorium.board;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -62,6 +63,34 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
             @Param("userId") String userId,
             @Param("pinIds") Set<UUID> pinIds
     );
+
+    @Query("""
+    SELECT p.id FROM Pin p 
+    WHERE p.id IN :pinIds
+    AND NOT EXISTS (
+        SELECT 1 FROM Board b JOIN b.pins bp 
+        WHERE b.userId = :userId 
+        AND b.id != :excludeBoardId 
+        AND bp.id = p.id
+    )
+    AND NOT EXISTS (
+        SELECT 1 FROM SavedPin sp 
+        WHERE sp.userId = :userId 
+        AND sp.pin.id = p.id
+    )
+""")
+    Set<UUID> findPinsNotSavedElsewhere(
+            @Param("userId") String userId,
+            @Param("pinIds") Set<UUID> pinIds,
+            @Param("excludeBoardId") UUID excludeBoardId
+    );
+
+    @Query("SELECT b FROM Board b LEFT JOIN FETCH b.pins WHERE b.id = :boardId AND b.userId = :userId")
+    Optional<Board> findByIdWithPinsAndUserId(@Param("boardId") UUID boardId, @Param("userId") String userId);
+
+    @Modifying
+    @Query(value = "DELETE FROM board_pins WHERE pin_id = :pinId AND board_id IN (SELECT id FROM boards WHERE user_id = :userId)", nativeQuery = true)
+    int removePinFromUserBoards(@Param("userId") String userId, @Param("pinId") UUID pinId);
 
     @Query("SELECT SIZE(b.pins) FROM Board b WHERE b.id = :boardId")
     int countPinsInBoard(@Param("boardId") UUID boardId);

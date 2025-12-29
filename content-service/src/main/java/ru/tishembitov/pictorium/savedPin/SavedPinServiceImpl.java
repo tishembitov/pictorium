@@ -58,15 +58,10 @@ public class SavedPinServiceImpl implements SavedPinService{
     public void unsaveFromProfile(UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        if (!pinRepository.existsById(pinId)) {
-            throw new ResourceNotFoundException("Pin not found with id: " + pinId);
-        }
+        SavedPin savedPin = savedPinRepository.findByUserIdAndPinId(currentUserId, pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin is not saved to your profile"));
 
-        if (!savedPinRepository.existsByUserIdAndPinId(currentUserId, pinId)) {
-            throw new ResourceNotFoundException("Pin is not saved to your profile");
-        }
-
-        savedPinRepository.deleteByUserIdAndPinId(currentUserId, pinId);
+        savedPinRepository.delete(savedPin);
 
         boolean stillSavedInBoards = boardRepository.isPinSavedByUser(currentUserId, pinId);
 
