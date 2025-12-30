@@ -29,6 +29,14 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/with-pin/{pinId}")
+    public ResponseEntity<BoardResponse> createBoardAndSavePin(
+            @PathVariable UUID pinId,
+            @Valid @RequestBody BoardCreateRequest request) {
+        BoardResponse response = boardService.createBoardAndSavePin(request, pinId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<List<BoardResponse>> getMyBoards() {
         List<BoardResponse> boards = boardService.getMyBoards();

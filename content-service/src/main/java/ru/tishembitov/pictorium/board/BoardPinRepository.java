@@ -23,6 +23,17 @@ public interface BoardPinRepository extends JpaRepository<BoardPin, UUID> {
     @Query("SELECT COUNT(bp) > 0 FROM BoardPin bp WHERE bp.board.userId = :userId AND bp.pin.id = :pinId")
     boolean isPinSavedByUser(@Param("userId") String userId, @Param("pinId") UUID pinId);
 
+    @Query("""
+    SELECT bp FROM BoardPin bp 
+    WHERE bp.board.userId = :userId AND bp.pin.id = :pinId 
+    ORDER BY bp.addedAt DESC 
+    LIMIT 1
+""")
+    Optional<BoardPin> findLastSavedByUserAndPin(
+            @Param("userId") String userId,
+            @Param("pinId") UUID pinId
+    );
+
     @Modifying
     @Query("DELETE FROM BoardPin bp WHERE bp.board.userId = :userId AND bp.pin.id = :pinId")
     int deleteByUserIdAndPinId(@Param("userId") String userId, @Param("pinId") UUID pinId);

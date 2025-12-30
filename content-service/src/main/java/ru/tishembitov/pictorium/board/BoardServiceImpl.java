@@ -195,28 +195,22 @@ public class BoardServiceImpl implements BoardService {
         boardPinRepository.delete(boardPin);
 
         boolean stillSaved = boardPinRepository.isPinSavedByUser(currentUserId, pinId);
-
         if (!stillSaved) {
             pinRepository.decrementSaveCount(pinId);
         }
 
-        log.info("Pin removed from board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
+        log.info("Pin removed from board: boardId={}, pinId={}, userId={}",
+                boardId, pinId, currentUserId);
     }
 
     @Override
     public void unsavePin(UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        int removedCount = boardPinRepository.deleteByUserIdAndPinId(currentUserId, pinId);
+        BoardPin lastBoardPin = boardPinRepository.findLastSavedByUserAndPin(currentUserId, pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin is not saved in any of your boards"));
 
-        if (removedCount == 0) {
-            throw new ResourceNotFoundException("Pin is not saved in any of your boards");
-        }
-
-        pinRepository.decrementSaveCount(pinId);
-
-        log.info("Pin unsaved from all boards: pinId={}, userId={}, boardCount={}",
-                pinId, currentUserId, removedCount);
+        removePinFromBoard(lastBoardPin.getBoard().getId(), pinId);
     }
 
     @Override
@@ -278,6 +272,40 @@ public class BoardServiceImpl implements BoardService {
         boardRepository.delete(board);
 
         log.info("Board deleted: id={}, userId={}", boardId, currentUserId);
+    }
+
+    @Override
+    public BoardResponse createBoardAndSavePin(BoardCreateRequest request, UUID pinId) {
+        String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        Pin pin = pinRepository.findById(pinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pin not found with id: " + pinId));
+
+        if (boardRepository.existsByUserIdAndTitle(currentUserId, request.title().trim())) {
+            throw new BadRequestException("Board with title '" + request.title() + "' already exists");
+        }
+
+        boolean wasAlreadySaved = boardPinRepository.isPinSavedByUser(currentUserId, pinId);
+
+        Board board = boardMapper.toEntity(request, currentUserId);
+        Board savedBoard = boardRepository.save(board);
+
+        BoardPin boardPin = BoardPin.builder()
+                .board(savedBoard)
+                .pin(pin)
+                .build();
+        boardPinRepository.save(boardPin);
+
+        if (!wasAlreadySaved) {
+            pinRepository.incrementSaveCount(pinId);
+        }
+
+        updateSelectedBoard(currentUserId, savedBoard);
+
+        log.info("Board created with pin: boardId={}, pinId={}, userId={}",
+                savedBoard.getId(), pinId, currentUserId);
+
+        return boardMapper.toResponse(savedBoard);
     }
 
     @Override
