@@ -1,29 +1,29 @@
-package ru.tishembitov.pictorium.savedPin;
+package ru.tishembitov.pictorium.pin;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.tishembitov.pictorium.pin.PinResponse;
+import ru.tishembitov.pictorium.board.BoardService;
 
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/pins")
 @RequiredArgsConstructor
-public class SavedPinController {
+public class SavePinController {
 
-    private final SavedPinService savedPinService;
-    
+    private final BoardService boardService;
+
     @PostMapping("/{pinId}/save")
-    public ResponseEntity<PinResponse> saveToProfile(@PathVariable UUID pinId) {
-        PinResponse response = savedPinService.saveToProfile(pinId);
+    public ResponseEntity<PinResponse> savePin(@PathVariable UUID pinId) {
+        PinResponse response = boardService.savePin(pinId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    
+
     @DeleteMapping("/{pinId}/save")
-    public ResponseEntity<Void> unsaveFromProfile(@PathVariable UUID pinId) {
-        savedPinService.unsaveFromProfile(pinId);
+    public ResponseEntity<Void> unsavePin(@PathVariable UUID pinId) {
+        boardService.unsavePin(pinId);
         return ResponseEntity.noContent().build();
     }
 }

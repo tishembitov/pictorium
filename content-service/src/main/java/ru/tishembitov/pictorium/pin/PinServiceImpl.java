@@ -14,7 +14,6 @@ import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.comment.CommentRepository;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.like.LikeRepository;
-import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
 import ru.tishembitov.pictorium.util.SecurityUtils;
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
 public class PinServiceImpl implements PinService {
 
     private final PinRepository pinRepository;
-    private final SavedPinRepository savedPinRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
     private final BoardRepository boardRepository;
@@ -176,8 +174,6 @@ public class PinServiceImpl implements PinService {
 
         Set<UUID> likedPinIds = likeRepository.findLikedPinIds(userId, pinIds);
 
-        Set<UUID> savedToProfileIds = savedPinRepository.findSavedToProfilePinIds(userId, pinIds);
-
         List<PinSaveInfoProjection> boardSaveInfos = boardRepository.findPinSaveInfo(userId, pinIds);
         Map<UUID, PinSaveInfoProjection> boardSaveMap = boardSaveInfos.stream()
                 .collect(Collectors.toMap(PinSaveInfoProjection::getPinId, p -> p));
@@ -186,19 +182,13 @@ public class PinServiceImpl implements PinService {
 
         for (UUID pinId : pinIds) {
             boolean isLiked = likedPinIds.contains(pinId);
-            boolean isSavedToProfile = savedToProfileIds.contains(pinId);
             PinSaveInfoProjection boardInfo = boardSaveMap.get(pinId);
 
-            boolean isSavedToBoards = boardInfo != null;
-            boolean isSaved = isSavedToProfile || isSavedToBoards;
-
-            if (isSaved) {
-                result.put(pinId, new PinInteractionDto(
+            if (boardInfo != null) {
+                result.put(pinId, PinInteractionDto.saved(
                         isLiked,
-                        true,
-                        isSavedToProfile,
-                        isSavedToBoards ? boardInfo.getFirstBoardName() : null,
-                        isSavedToBoards ? boardInfo.getBoardCount().intValue() : 0
+                        boardInfo.getFirstBoardName(),
+                        boardInfo.getBoardCount().intValue()
                 ));
             } else {
                 result.put(pinId, PinInteractionDto.notSaved(isLiked));
@@ -223,9 +213,7 @@ public class PinServiceImpl implements PinService {
     }
 
     private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {
-        if (newId == null) {
-            return;
-        }
+        if (newId == null) return;
 
         if (newId.isBlank()) {
             imageService.deleteImageSafely(currentId);
@@ -253,68 +241,29 @@ public class PinServiceImpl implements PinService {
                 String authorId = filter.authorId() != null
                         ? filter.authorId()
                         : SecurityUtils.requireCurrentUserId();
-                yield filter
-                        .withAuthorId(authorId)
-                        .withSavedBy(null)
-                        .withSavedToProfileBy(null)
-                        .withLikedBy(null)
-                        .withRelatedTo(null);
+                yield filter.withAuthorId(authorId);
             }
 
             case SAVED -> {
                 String savedBy = filter.savedBy() != null
                         ? filter.savedBy()
                         : SecurityUtils.requireCurrentUserId();
-                yield filter
-                        .withAuthorId(null)
-                        .withSavedBy(savedBy)
-                        .withSavedToProfileBy(null)
-                        .withLikedBy(null)
-                        .withRelatedTo(null);
-            }
-
-            case SAVED_TO_PROFILE -> {
-                String savedToProfileBy = filter.savedToProfileBy() != null
-                        ? filter.savedToProfileBy()
-                        : SecurityUtils.requireCurrentUserId();
-                yield filter
-                        .withAuthorId(null)
-                        .withSavedBy(null)
-                        .withSavedToProfileBy(savedToProfileBy)
-                        .withLikedBy(null)
-                        .withRelatedTo(null);
-            }
-
-            case SAVED_ALL -> {
-                String userId = filter.savedBy() != null
-                        ? filter.savedBy()
-                        : SecurityUtils.requireCurrentUserId();
-                yield filter.withSavedAnywhere(userId);
+                yield filter.withSavedBy(savedBy);
             }
 
             case LIKED -> {
                 String likedBy = filter.likedBy() != null
                         ? filter.likedBy()
                         : SecurityUtils.requireCurrentUserId();
-                yield filter
-                        .withAuthorId(null)
-                        .withSavedBy(null)
-                        .withSavedToProfileBy(null)
-                        .withLikedBy(likedBy)
-                        .withRelatedTo(null);
+                yield filter.withLikedBy(likedBy);
             }
 
             case RELATED -> {
                 if (filter.relatedTo() == null) {
                     throw new IllegalArgumentException(
-                            "relatedTo parameter is required for RELATED scope"
-                    );
+                            "relatedTo parameter is required for RELATED scope");
                 }
-                yield filter
-                        .withAuthorId(null)
-                        .withSavedBy(null)
-                        .withSavedToProfileBy(null)
-                        .withLikedBy(null);
+                yield filter;
             }
 
             default -> filter;

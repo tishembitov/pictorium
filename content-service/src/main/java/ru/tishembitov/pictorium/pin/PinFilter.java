@@ -12,16 +12,14 @@ public record PinFilter(
         Set<String> tags,
         String authorId,
         String savedBy,
-        String savedToProfileBy,
-        String savedAnywhere,
         String likedBy,
         UUID relatedTo,
+        UUID boardId,
         Instant createdFrom,
         Instant createdTo,
         Scope scope
 ) {
-
     public static PinFilter empty() {
-        return new PinFilter(null, null, null, null, null, null, null, null, null, null, null);
+        return new PinFilter(null, null, null, null, null, null, null, null, null, null);
     }
 }

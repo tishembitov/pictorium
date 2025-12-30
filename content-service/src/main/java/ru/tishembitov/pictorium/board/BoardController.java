@@ -14,6 +14,7 @@ import ru.tishembitov.pictorium.pin.PinResponse;
 import java.util.List;
 import java.util.UUID;
 
+
 @RestController
 @RequestMapping("/api/v1/boards")
 @RequiredArgsConstructor
@@ -53,6 +54,15 @@ public class BoardController {
         return ResponseEntity.ok(board);
     }
 
+    @GetMapping("/{boardId}/pins")
+    public ResponseEntity<Page<PinResponse>> getBoardPins(
+            @PathVariable UUID boardId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        Page<PinResponse> pins = boardService.getBoardPins(boardId, pageable);
+        return ResponseEntity.ok(pins);
+    }
+
     @PostMapping("/{boardId}/pins/{pinId}")
     public ResponseEntity<PinResponse> savePinToBoard(
             @PathVariable UUID boardId,
@@ -75,21 +85,6 @@ public class BoardController {
             @PathVariable UUID pinId) {
         boardService.removePinFromBoard(boardId, pinId);
         return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/pins/{pinId}")
-    public ResponseEntity<Void> removePinFromAllBoards(@PathVariable UUID pinId) {
-        boardService.removePinFromAllBoards(pinId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/{boardId}/pins")
-    public ResponseEntity<Page<PinResponse>> getBoardPins(
-            @PathVariable UUID boardId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable) {
-        Page<PinResponse> pins = boardService.getBoardPins(boardId, pageable);
-        return ResponseEntity.ok(pins);
     }
 
     @DeleteMapping("/{boardId}")

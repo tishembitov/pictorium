@@ -6,16 +6,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.board.BoardRepository;
-import ru.tishembitov.pictorium.board.PinSaveInfoProjection;
 import ru.tishembitov.pictorium.comment.*;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.pin.*;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
+
 
 @Service
 @Slf4j
@@ -24,7 +21,6 @@ import java.util.UUID;
 public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
-    private final BoardRepository boardRepository;
     private final PinRepository pinRepository;
     private final CommentRepository commentRepository;
     private final PinMapper pinMapper;
@@ -73,9 +69,8 @@ public class LikeServiceImpl implements LikeService {
             throw new ResourceNotFoundException("Pin with id " + pinId + " not found");
         }
 
-        Page<Like> likesPage = likeRepository.findByPinIdOrderByCreatedAtDesc(pinId, pageable);
-
-        return likesPage.map(likeMapper::toResponse);
+        return likeRepository.findByPinIdOrderByCreatedAtDesc(pinId, pageable)
+                .map(likeMapper::toResponse);
     }
 
     @Override
@@ -121,11 +116,7 @@ public class LikeServiceImpl implements LikeService {
             throw new ResourceNotFoundException("Comment with id " + commentId + " not found");
         }
 
-        Page<Like> likesPage = likeRepository.findByCommentIdOrderByCreatedAtDesc(
-                commentId,
-                pageable
-        );
-
-        return likesPage.map(likeMapper::toResponse);
+        return likeRepository.findByCommentIdOrderByCreatedAtDesc(commentId, pageable)
+                .map(likeMapper::toResponse);
     }
 }

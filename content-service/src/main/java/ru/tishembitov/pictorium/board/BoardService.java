@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface BoardService {
 
-    BoardResponse createBoard(@Valid BoardCreateRequest request);
+    BoardResponse createBoard(BoardCreateRequest request);
 
     List<BoardResponse> getMyBoards();
 
@@ -20,13 +20,12 @@ public interface BoardService {
 
     List<BoardWithPinStatusResponse> getMyBoardsForPin(UUID pinId);
 
+    PinResponse savePin(UUID pinId);
     PinResponse savePinToBoard(UUID boardId, UUID pinId);
-
     PinResponse savePinToBoards(UUID pinId, List<UUID> boardIds);
 
+    void unsavePin(UUID pinId);
     void removePinFromBoard(UUID boardId, UUID pinId);
-
-    void removePinFromAllBoards(UUID pinId);
 
     Page<PinResponse> getBoardPins(UUID boardId, Pageable pageable);
 

@@ -4,7 +4,6 @@ import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import ru.tishembitov.pictorium.board.Board;
 import ru.tishembitov.pictorium.like.Like;
-import ru.tishembitov.pictorium.savedPin.SavedPin;
 import ru.tishembitov.pictorium.tag.Tag;
 
 import java.time.Instant;
@@ -13,8 +12,7 @@ import java.util.stream.Collectors;
 
 public class PinSpecifications {
 
-    private PinSpecifications() {
-    }
+    private PinSpecifications() {}
 
     public static Specification<Pin> withFilter(PinFilter filter) {
         if (filter == null) {
@@ -38,15 +36,11 @@ public class PinSpecifications {
         }
 
         if (hasText(filter.savedBy())) {
-            specs.add(bySavedToBoards(filter.savedBy()));
+            specs.add(bySavedByUser(filter.savedBy()));
         }
 
-        if (hasText(filter.savedToProfileBy())) {
-            specs.add(bySavedToProfile(filter.savedToProfileBy()));
-        }
-
-        if (hasText(filter.savedAnywhere())) {
-            specs.add(bySavedAnywhere(filter.savedAnywhere()));
+        if (filter.boardId() != null) {
+            specs.add(byBoard(filter.boardId()));
         }
 
         if (hasText(filter.likedBy())) {
@@ -70,6 +64,32 @@ public class PinSpecifications {
         }
 
         return Specification.allOf(specs);
+    }
+
+    public static Specification<Pin> bySavedByUser(String userId) {
+        return (root, query, cb) -> {
+            Subquery<UUID> subquery = query.subquery(UUID.class);
+            Root<Board> boardRoot = subquery.from(Board.class);
+            Join<Board, Pin> pinsJoin = boardRoot.join("pins");
+
+            subquery.select(pinsJoin.get("id"))
+                    .where(cb.equal(boardRoot.get("userId"), userId));
+
+            return root.get("id").in(subquery);
+        };
+    }
+
+    public static Specification<Pin> byBoard(UUID boardId) {
+        return (root, query, cb) -> {
+            Subquery<UUID> subquery = query.subquery(UUID.class);
+            Root<Board> boardRoot = subquery.from(Board.class);
+            Join<Board, Pin> pinsJoin = boardRoot.join("pins");
+
+            subquery.select(pinsJoin.get("id"))
+                    .where(cb.equal(boardRoot.get("id"), boardId));
+
+            return root.get("id").in(subquery);
+        };
     }
 
     public static Specification<Pin> byTextSearch(String query) {
@@ -111,51 +131,6 @@ public class PinSpecifications {
         return (root, query, cb) -> cb.equal(root.get("authorId"), authorId);
     }
 
-    public static Specification<Pin> bySavedToBoards(String userId) {
-        return (root, query, cb) -> {
-            Subquery<UUID> subquery = query.subquery(UUID.class);
-            Root<Board> boardRoot = subquery.from(Board.class);
-            Join<Board, Pin> pinsJoin = boardRoot.join("pins");
-
-            subquery.select(pinsJoin.get("id"))
-                    .where(cb.equal(boardRoot.get("userId"), userId));
-
-            return root.get("id").in(subquery);
-        };
-    }
-
-    public static Specification<Pin> bySavedToProfile(String userId) {
-        return (root, query, cb) -> {
-            Subquery<UUID> subquery = query.subquery(UUID.class);
-            Root<SavedPin> savedRoot = subquery.from(SavedPin.class);
-
-            subquery.select(savedRoot.get("pin").get("id"))
-                    .where(cb.equal(savedRoot.get("userId"), userId));
-
-            return root.get("id").in(subquery);
-        };
-    }
-
-    public static Specification<Pin> bySavedAnywhere(String userId) {
-        return (root, query, cb) -> {
-            Subquery<UUID> boardSubquery = query.subquery(UUID.class);
-            Root<Board> boardRoot = boardSubquery.from(Board.class);
-            Join<Board, Pin> boardPinsJoin = boardRoot.join("pins");
-            boardSubquery.select(boardPinsJoin.get("id"))
-                    .where(cb.equal(boardRoot.get("userId"), userId));
-
-            Subquery<UUID> profileSubquery = query.subquery(UUID.class);
-            Root<SavedPin> savedRoot = profileSubquery.from(SavedPin.class);
-            profileSubquery.select(savedRoot.get("pin").get("id"))
-                    .where(cb.equal(savedRoot.get("userId"), userId));
-
-            return cb.or(
-                    root.get("id").in(boardSubquery),
-                    root.get("id").in(profileSubquery)
-            );
-        };
-    }
-
     public static Specification<Pin> byLikedBy(String userId) {
         return (root, query, cb) -> {
             Subquery<UUID> subquery = query.subquery(UUID.class);
@@ -175,7 +150,6 @@ public class PinSpecifications {
     public static Specification<Pin> byCreatedTo(Instant createdTo) {
         return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdTo);
     }
-
 
     public static Specification<Pin> byRelatedTo(UUID pinId) {
         return (root, query, cb) -> {
@@ -204,7 +178,6 @@ public class PinSpecifications {
 
     public static boolean needsDistinct(PinFilter filter) {
         if (filter == null) return false;
-
         return (filter.tags() != null && !filter.tags().isEmpty())
                 || filter.relatedTo() != null;
     }

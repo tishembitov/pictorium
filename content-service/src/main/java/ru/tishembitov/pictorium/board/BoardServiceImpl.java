@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
-import ru.tishembitov.pictorium.like.LikeRepository;
 import ru.tishembitov.pictorium.pin.*;
-import ru.tishembitov.pictorium.savedPin.SavedPinRepository;
+import ru.tishembitov.pictorium.selectedBoard.SelectedBoard;
+import ru.tishembitov.pictorium.selectedBoard.SelectedBoardRepository;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.*;
@@ -25,8 +25,7 @@ public class BoardServiceImpl implements BoardService {
 
     private final BoardRepository boardRepository;
     private final PinRepository pinRepository;
-    private final SavedPinRepository savedPinRepository;
-    private final LikeRepository likeRepository;
+    private final SelectedBoardRepository selectedBoardRepository;
     private final BoardMapper boardMapper;
     private final PinMapper pinMapper;
     private final PinService pinService;
@@ -84,6 +83,18 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
+    public PinResponse savePin(UUID pinId) {
+        String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        Board selectedBoard = selectedBoardRepository.findByUserIdWithBoard(currentUserId)
+                .map(SelectedBoard::getSelectedBoard)
+                .orElseThrow(() -> new BadRequestException(
+                        "No board selected. Please select a board or specify boardId"));
+
+        return savePinToBoard(selectedBoard.getId(), pinId);
+    }
+
+    @Override
     public PinResponse savePinToBoard(UUID boardId, UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
@@ -96,7 +107,6 @@ public class BoardServiceImpl implements BoardService {
         if (boardRepository.existsPinInBoard(boardId, pinId)) {
             return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
         }
-
         boolean wasAlreadySaved = boardRepository.isPinSavedByUser(currentUserId, pinId);
 
         board.getPins().add(pin);
@@ -105,6 +115,8 @@ public class BoardServiceImpl implements BoardService {
         if (!wasAlreadySaved) {
             pinRepository.incrementSaveCount(pinId);
         }
+
+        updateSelectedBoard(currentUserId, board);
 
         log.info("Pin saved to board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
 
@@ -124,7 +136,9 @@ public class BoardServiceImpl implements BoardService {
 
         boolean wasAlreadySaved = boardRepository.isPinSavedByUser(currentUserId, pinId);
 
+        Board lastBoard = null;
         int savedCount = 0;
+
         for (UUID boardId : boardIds) {
             Board board = boardRepository.findByIdAndUserId(boardId, currentUserId)
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -133,12 +147,17 @@ public class BoardServiceImpl implements BoardService {
             if (!boardRepository.existsPinInBoard(boardId, pinId)) {
                 board.getPins().add(pin);
                 boardRepository.save(board);
+                lastBoard = board;
                 savedCount++;
             }
         }
 
         if (!wasAlreadySaved && savedCount > 0) {
             pinRepository.incrementSaveCount(pinId);
+        }
+
+        if (lastBoard != null) {
+            updateSelectedBoard(currentUserId, lastBoard);
         }
 
         log.info("Pin saved to {} boards: pinId={}, userId={}", savedCount, pinId, currentUserId);
@@ -161,10 +180,9 @@ public class BoardServiceImpl implements BoardService {
         board.getPins().remove(pin);
         boardRepository.save(board);
 
-        boolean stillSavedInBoards = boardRepository.isPinSavedByUser(currentUserId, pinId);
-        boolean savedToProfile = savedPinRepository.existsByUserIdAndPinId(currentUserId, pinId);
+        boolean stillSaved = boardRepository.isPinSavedByUser(currentUserId, pinId);
 
-        if (!stillSavedInBoards && !savedToProfile) {
+        if (!stillSaved) {
             pinRepository.decrementSaveCount(pinId);
         }
 
@@ -172,7 +190,7 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public void removePinFromAllBoards(UUID pinId) {
+    public void unsavePin(UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
         int removedCount = boardRepository.removePinFromUserBoards(currentUserId, pinId);
@@ -181,13 +199,9 @@ public class BoardServiceImpl implements BoardService {
             throw new ResourceNotFoundException("Pin is not saved in any of your boards");
         }
 
-        boolean savedToProfile = savedPinRepository.existsByUserIdAndPinId(currentUserId, pinId);
+        pinRepository.decrementSaveCount(pinId);
 
-        if (!savedToProfile) {
-            pinRepository.decrementSaveCount(pinId);
-        }
-
-        log.info("Pin removed from all boards: pinId={}, userId={}, boardCount={}",
+        log.info("Pin unsaved from all boards: pinId={}, userId={}, boardCount={}",
                 pinId, currentUserId, removedCount);
     }
 
@@ -234,13 +248,17 @@ public class BoardServiceImpl implements BoardService {
                 .collect(Collectors.toSet());
 
         if (!pinIds.isEmpty()) {
-            Set<UUID> pinsToDecrement = boardRepository.findPinsNotSavedElsewhere(
+            Set<UUID> pinsToDecrement = boardRepository.findPinsOnlyInBoard(
                     currentUserId, pinIds, boardId);
 
             if (!pinsToDecrement.isEmpty()) {
                 pinRepository.decrementSaveCountBatch(pinsToDecrement);
             }
         }
+
+        selectedBoardRepository.findByUserId(currentUserId)
+                .filter(sb -> sb.getSelectedBoard() != null && sb.getSelectedBoard().getId().equals(boardId))
+                .ifPresent(selectedBoardRepository::delete);
 
         boardRepository.delete(board);
 
@@ -259,5 +277,15 @@ public class BoardServiceImpl implements BoardService {
         if (!board.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this board");
         }
+    }
+
+    private void updateSelectedBoard(String userId, Board board) {
+        SelectedBoard selectedBoard = selectedBoardRepository.findByUserId(userId)
+                .orElseGet(() -> SelectedBoard.builder()
+                        .userId(userId)
+                        .build());
+
+        selectedBoard.setSelectedBoard(board);
+        selectedBoardRepository.save(selectedBoard);
     }
 }
