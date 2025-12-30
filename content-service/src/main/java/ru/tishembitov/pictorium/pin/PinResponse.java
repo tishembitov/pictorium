@@ -21,8 +21,8 @@ public record PinResponse(
 
         Boolean isLiked,
         Boolean isSaved,
-        String savedToBoardName,
-        Integer savedToBoardCount,
+        String lastSavedBoardName,
+        Integer savedToBoardsCount,
 
         Integer saveCount,
         Integer commentCount,

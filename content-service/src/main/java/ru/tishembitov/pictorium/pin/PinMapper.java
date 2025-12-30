@@ -28,8 +28,8 @@ public interface PinMapper {
     @Mapping(target = "tags", source = "pin.tags")
     @Mapping(target = "isLiked", source = "interaction.isLiked")
     @Mapping(target = "isSaved", source = "interaction.isSaved")
-    @Mapping(target = "savedToBoardName", source = "interaction.savedToBoardName")
-    @Mapping(target = "savedToBoardCount", source = "interaction.savedToBoardCount")
+    @Mapping(target = "lastSavedBoardName", source = "interaction.lastSavedBoardName")
+    @Mapping(target = "savedToBoardsCount", source = "interaction.savedToBoardsCount")
     PinResponse toResponse(Pin pin, PinInteractionDto interaction);
 
     default Set<String> mapTags(Set<Tag> tags) {

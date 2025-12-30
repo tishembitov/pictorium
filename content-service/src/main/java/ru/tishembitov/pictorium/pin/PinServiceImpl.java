@@ -187,7 +187,7 @@ public class PinServiceImpl implements PinService {
             if (boardInfo != null) {
                 result.put(pinId, PinInteractionDto.saved(
                         isLiked,
-                        boardInfo.getFirstBoardName(),
+                        boardInfo.getLastBoardName(),
                         boardInfo.getBoardCount().intValue()
                 ));
             } else {

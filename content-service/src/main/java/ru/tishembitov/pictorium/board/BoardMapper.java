@@ -8,7 +8,7 @@ public interface BoardMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", source = "userId")
-    @Mapping(target = "pins", ignore = true)
+    @Mapping(target = "boardPins", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Board toEntity(BoardCreateRequest request, String userId);
