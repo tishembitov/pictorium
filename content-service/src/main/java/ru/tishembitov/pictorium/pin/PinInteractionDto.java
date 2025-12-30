@@ -3,8 +3,8 @@ package ru.tishembitov.pictorium.pin;
 public record PinInteractionDto(
         Boolean isLiked,
         Boolean isSaved,
-        String savedToBoardName,
-        Integer savedToBoardCount
+        String lastSavedBoardName,
+        Integer savedToBoardsCount
 ) {
     public static PinInteractionDto empty() {
         return new PinInteractionDto(false, false, null, 0);

@@ -29,7 +29,7 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
         SELECT p.id as id,
                CASE WHEN l.id IS NOT NULL THEN true ELSE false END as liked,
                CASE WHEN EXISTS (
-                   SELECT 1 FROM Board b JOIN b.pins bp 
+                   SELECT 1 FROM Board b JOIN b.boardPins bp 
                    WHERE b.userId = :userId AND bp.id = p.id
                ) THEN true ELSE false END as saved
         FROM Pin p
@@ -69,10 +69,10 @@ public interface PinRepository extends JpaRepository<Pin, UUID>, JpaSpecificatio
     @Query("UPDATE Pin p SET p.commentCount = CASE WHEN p.commentCount >= :count THEN p.commentCount - :count ELSE 0 END WHERE p.id = :pinId")
     void decrementCommentCountBy(@Param("pinId") UUID pinId, @Param("count") long count);
 
-    @Query("SELECT p FROM Board b JOIN b.pins p WHERE b.id = :boardId")
-    Page<Pin> findByBoardId(@Param("boardId") UUID boardId, Pageable pageable);
-
     @Modifying
     @Query("UPDATE Pin p SET p.saveCount = CASE WHEN p.saveCount > 0 THEN p.saveCount - 1 ELSE 0 END WHERE p.id IN :pinIds")
     void decrementSaveCountBatch(@Param("pinIds") Set<UUID> pinIds);
+
+    @Query("SELECT bp.pin FROM BoardPin bp WHERE bp.board.id = :boardId ORDER BY bp.addedAt DESC")
+    Page<Pin> findByBoardId(@Param("boardId") UUID boardId, Pageable pageable);
 }

@@ -4,7 +4,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import ru.tishembitov.pictorium.pin.PinResponse;
 
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 

@@ -5,7 +5,6 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import ru.tishembitov.pictorium.pin.Pin;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -48,12 +47,17 @@ public class Board {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    @ManyToMany
-    @JoinTable(
-            name = "board_pins",
-            joinColumns = @JoinColumn(name = "board_id"),
-            inverseJoinColumns = @JoinColumn(name = "pin_id")
-    )
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<Pin> pins = new HashSet<>();
+    private Set<BoardPin> boardPins = new HashSet<>();
+
+    public void addPin(BoardPin boardPin) {
+        boardPins.add(boardPin);
+        boardPin.setBoard(this);
+    }
+
+    public void removePin(BoardPin boardPin) {
+        boardPins.remove(boardPin);
+        boardPin.setBoard(null);
+    }
 }
