@@ -15,13 +15,13 @@ public class SavePinController {
 
     private final BoardService boardService;
 
-    @PostMapping("/{pinId}/save")
+    @PostMapping("/{pinId}/saves")
     public ResponseEntity<PinResponse> savePin(@PathVariable UUID pinId) {
         PinResponse response = boardService.savePin(pinId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @DeleteMapping("/{pinId}/save")
+    @DeleteMapping("/{pinId}/saves")
     public ResponseEntity<Void> unsavePin(@PathVariable UUID pinId) {
         boardService.unsavePin(pinId);
         return ResponseEntity.noContent().build();
