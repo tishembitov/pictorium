@@ -19,11 +19,10 @@ public interface BoardService {
 
     List<BoardWithPinStatusResponse> getMyBoardsForPin(UUID pinId);
 
-    PinResponse savePin(UUID pinId);
     PinResponse savePinToBoard(UUID boardId, UUID pinId);
+
     PinResponse savePinToBoards(UUID pinId, List<UUID> boardIds);
 
-    void unsavePin(UUID pinId);
     void removePinFromBoard(UUID boardId, UUID pinId);
 
     Page<PinResponse> getBoardPins(UUID boardId, Pageable pageable);

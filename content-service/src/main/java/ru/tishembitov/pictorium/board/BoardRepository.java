@@ -22,9 +22,6 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
     @Query("SELECT b FROM Board b LEFT JOIN FETCH b.boardPins WHERE b.id = :boardId")
     Optional<Board> findByIdWithPins(@Param("boardId") UUID boardId);
 
-    @Query("SELECT b FROM Board b LEFT JOIN FETCH b.boardPins WHERE b.id = :boardId AND b.userId = :userId")
-    Optional<Board> findByIdWithPinsAndUserId(@Param("boardId") UUID boardId, @Param("userId") String userId);
-
     @Query("""
         SELECT b.id as id, 
                b.userId as userId,
@@ -77,7 +74,4 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
             @Param("pinIds") Set<UUID> pinIds,
             @Param("excludeBoardId") UUID excludeBoardId
     );
-
-    @Query("SELECT SIZE(b.boardPins) FROM Board b WHERE b.id = :boardId")
-    int countPinsInBoard(@Param("boardId") UUID boardId);
 }

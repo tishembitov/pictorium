@@ -92,18 +92,6 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public PinResponse savePin(UUID pinId) {
-        String currentUserId = SecurityUtils.requireCurrentUserId();
-
-        Board selectedBoard = selectedBoardRepository.findByUserIdWithBoard(currentUserId)
-                .map(SelectedBoard::getSelectedBoard)
-                .orElseThrow(() -> new BadRequestException(
-                        "No board selected. Please select a board or specify boardId"));
-
-        return savePinToBoard(selectedBoard.getId(), pinId);
-    }
-
-    @Override
     public PinResponse savePinToBoard(UUID boardId, UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
@@ -201,16 +189,6 @@ public class BoardServiceImpl implements BoardService {
 
         log.info("Pin removed from board: boardId={}, pinId={}, userId={}",
                 boardId, pinId, currentUserId);
-    }
-
-    @Override
-    public void unsavePin(UUID pinId) {
-        String currentUserId = SecurityUtils.requireCurrentUserId();
-
-        BoardPin lastBoardPin = boardPinRepository.findLastSavedByUserAndPin(currentUserId, pinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Pin is not saved in any of your boards"));
-
-        removePinFromBoard(lastBoardPin.getBoard().getId(), pinId);
     }
 
     @Override
