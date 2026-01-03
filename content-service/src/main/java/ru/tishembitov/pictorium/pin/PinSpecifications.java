@@ -3,6 +3,7 @@ package ru.tishembitov.pictorium.pin;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import ru.tishembitov.pictorium.board.Board;
+import ru.tishembitov.pictorium.board.BoardPin;
 import ru.tishembitov.pictorium.like.Like;
 import ru.tishembitov.pictorium.tag.Tag;
 
@@ -20,8 +21,6 @@ public class PinSpecifications {
         }
 
         List<Specification<Pin>> specs = new ArrayList<>();
-
-        specs.add(fetchTags());
 
         if (hasText(filter.q())) {
             specs.add(byTextSearch(filter.q()));
@@ -69,11 +68,11 @@ public class PinSpecifications {
     public static Specification<Pin> bySavedByUser(String userId) {
         return (root, query, cb) -> {
             Subquery<UUID> subquery = query.subquery(UUID.class);
-            Root<Board> boardRoot = subquery.from(Board.class);
-            Join<Board, Pin> pinsJoin = boardRoot.join("pins");
+            Root<BoardPin> boardPinRoot = subquery.from(BoardPin.class);
+            Join<BoardPin, Board> boardJoin = boardPinRoot.join("board");
 
-            subquery.select(pinsJoin.get("id"))
-                    .where(cb.equal(boardRoot.get("userId"), userId));
+            subquery.select(boardPinRoot.get("pin").get("id"))
+                    .where(cb.equal(boardJoin.get("userId"), userId));
 
             return root.get("id").in(subquery);
         };
@@ -82,16 +81,14 @@ public class PinSpecifications {
     public static Specification<Pin> byBoard(UUID boardId) {
         return (root, query, cb) -> {
             Subquery<UUID> subquery = query.subquery(UUID.class);
-            Root<Board> boardRoot = subquery.from(Board.class);
-            Join<Board, Pin> pinsJoin = boardRoot.join("pins");
+            Root<BoardPin> boardPinRoot = subquery.from(BoardPin.class);
 
-            subquery.select(pinsJoin.get("id"))
-                    .where(cb.equal(boardRoot.get("id"), boardId));
+            subquery.select(boardPinRoot.get("pin").get("id"))
+                    .where(cb.equal(boardPinRoot.get("board").get("id"), boardId));
 
             return root.get("id").in(subquery);
         };
     }
-
     public static Specification<Pin> byTextSearch(String query) {
         return (root, criteriaQuery, cb) -> {
             String searchPattern = "%" + query.toLowerCase().trim() + "%";
@@ -115,15 +112,6 @@ public class PinSpecifications {
 
             Join<Pin, Tag> tagJoin = root.join("tags", JoinType.INNER);
             return cb.lower(tagJoin.get("name")).in(normalizedTags);
-        };
-    }
-
-    public static Specification<Pin> fetchTags() {
-        return (root, query, cb) -> {
-            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
-                root.fetch("tags", JoinType.LEFT);
-            }
-            return cb.conjunction();
         };
     }
 

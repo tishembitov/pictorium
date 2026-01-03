@@ -65,7 +65,7 @@ public class BoardController {
     @GetMapping("/{boardId}/pins")
     public ResponseEntity<Page<PinResponse>> getBoardPins(
             @PathVariable UUID boardId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            @PageableDefault(size = 20, sort = "addedAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
         Page<PinResponse> pins = boardService.getBoardPins(boardId, pageable);
         return ResponseEntity.ok(pins);
