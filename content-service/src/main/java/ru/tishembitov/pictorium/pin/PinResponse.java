@@ -20,7 +20,7 @@ public record PinResponse(
         Set<String> tags,
 
         Boolean isLiked,
-        Boolean isSaved,
+        UUID lastSavedBoardId,
         String lastSavedBoardName,
         Integer savedToBoardsCount,
 

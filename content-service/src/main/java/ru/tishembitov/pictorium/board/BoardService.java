@@ -31,6 +31,4 @@ public interface BoardService {
     void deleteBoard(UUID boardId);
 
     BoardResponse createBoardAndSavePin(BoardCreateRequest request, UUID pinId);
-
-    boolean isPinSavedByCurrentUser(UUID pinId);
 }

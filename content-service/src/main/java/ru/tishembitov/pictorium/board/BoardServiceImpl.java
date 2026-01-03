@@ -308,14 +308,6 @@ public class BoardServiceImpl implements BoardService {
         return boardMapper.toResponse(savedBoard);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isPinSavedByCurrentUser(UUID pinId) {
-        return SecurityUtils.getCurrentUserId()
-                .map(userId -> boardPinRepository.isPinSavedByUser(userId, pinId))
-                .orElse(false);
-    }
-
     private void checkBoardOwnership(Board board, String userId) {
         if (!board.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this board");

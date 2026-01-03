@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public interface PinSaveInfoProjection {
     UUID getPinId();
-    String getLastBoardName(); 
+    UUID getLastBoardId();
+    String getLastBoardName();
     Long getBoardCount();
 }

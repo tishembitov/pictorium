@@ -45,6 +45,10 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
 
     @Query("""
         SELECT bp.pin.id as pinId,
+               (SELECT bp2.board.id FROM BoardPin bp2 
+                WHERE bp2.board.userId = :userId AND bp2.pin.id = bp.pin.id 
+                ORDER BY bp2.addedAt DESC 
+                LIMIT 1) as lastBoardId,
                (SELECT b2.title FROM BoardPin bp2 
                 JOIN bp2.board b2 
                 WHERE b2.userId = :userId AND bp2.pin.id = bp.pin.id 
