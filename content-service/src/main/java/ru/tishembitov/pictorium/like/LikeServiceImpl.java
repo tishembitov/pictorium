@@ -50,7 +50,7 @@ public class LikeServiceImpl implements LikeService {
     }
 
     @Override
-    public void unlikePin(UUID pinId) {
+    public PinResponse unlikePin(UUID pinId) {
         String userId = SecurityUtils.requireCurrentUserId();
 
         Like like = likeRepository.findByUserIdAndPinId(userId, pinId)
@@ -60,6 +60,12 @@ public class LikeServiceImpl implements LikeService {
         pinRepository.decrementLikeCount(pinId);
 
         log.info("Pin unliked: pinId={}, userId={}", pinId, userId);
+
+        Pin pin = pinRepository.findByIdWithTags(pinId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Pin with id " + pinId + " not found"));
+
+        return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }
 
     @Override
@@ -97,7 +103,7 @@ public class LikeServiceImpl implements LikeService {
     }
 
     @Override
-    public void unlikeComment(UUID commentId) {
+    public CommentResponse unlikeComment(UUID commentId) {
         String userId = SecurityUtils.requireCurrentUserId();
 
         Like like = likeRepository.findByUserIdAndCommentId(userId, commentId)
@@ -107,6 +113,12 @@ public class LikeServiceImpl implements LikeService {
         commentRepository.decrementLikeCount(commentId);
 
         log.info("Comment unliked: commentId={}, userId={}", commentId, userId);
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Comment with id " + commentId + " not found"));
+
+        return commentMapper.toResponse(comment, false);
     }
 
     @Override

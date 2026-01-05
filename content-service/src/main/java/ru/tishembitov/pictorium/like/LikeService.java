@@ -10,13 +10,10 @@ import java.util.UUID;
 public interface LikeService {
 
     PinResponse likePin(UUID pinId);
-    void unlikePin(UUID pinId);
+    PinResponse unlikePin(UUID pinId);
     Page<LikeResponse> getLikesOnPin(UUID pinId, Pageable pageable);
 
     CommentResponse likeComment(UUID commentId);
-    void unlikeComment(UUID commentId);
+    CommentResponse unlikeComment(UUID commentId);
     Page<LikeResponse> getLikesOnComment(UUID commentId, Pageable pageable);
-
-
-
 }

@@ -26,9 +26,9 @@ public class PinLikeController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> unlikePin(@PathVariable UUID pinId) {
-        likeService.unlikePin(pinId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<PinResponse> unlikePin(@PathVariable UUID pinId) {
+        PinResponse response = likeService.unlikePin(pinId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

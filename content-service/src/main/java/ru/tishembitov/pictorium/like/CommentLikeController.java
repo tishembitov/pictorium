@@ -26,9 +26,9 @@ public class CommentLikeController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> unlikeComment(@PathVariable UUID commentId) {
-        likeService.unlikeComment(commentId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<CommentResponse> unlikeComment(@PathVariable UUID commentId) {
+        CommentResponse response = likeService.unlikeComment(commentId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
