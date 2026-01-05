@@ -1,18 +1,28 @@
+// src/main/java/ru/tishembitov/pictorium/like/LikeServiceImpl.java
+
 package ru.tishembitov.pictorium.like;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.tishembitov.pictorium.comment.*;
+
+import ru.tishembitov.pictorium.comment.Comment;
+import ru.tishembitov.pictorium.comment.CommentMapper;
+import ru.tishembitov.pictorium.comment.CommentRepository;
+import ru.tishembitov.pictorium.comment.CommentResponse;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
-import ru.tishembitov.pictorium.pin.*;
+import ru.tishembitov.pictorium.pin.Pin;
+import ru.tishembitov.pictorium.pin.PinMapper;
+import ru.tishembitov.pictorium.pin.PinRepository;
+import ru.tishembitov.pictorium.pin.PinResponse;
+import ru.tishembitov.pictorium.pin.PinService;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.UUID;
-
 
 @Service
 @Slf4j
@@ -27,6 +37,7 @@ public class LikeServiceImpl implements LikeService {
     private final PinService pinService;
     private final CommentMapper commentMapper;
     private final LikeMapper likeMapper;
+    private final EntityManager entityManager;
 
     @Override
     public PinResponse likePin(UUID pinId) {
@@ -42,7 +53,11 @@ public class LikeServiceImpl implements LikeService {
 
         Like like = likeMapper.toEntity(userId, pin);
         likeRepository.save(like);
+
         pinRepository.incrementLikeCount(pinId);
+
+        entityManager.flush();
+        entityManager.refresh(pin);
 
         log.info("Pin liked: pinId={}, userId={}", pinId, userId);
 
@@ -57,13 +72,17 @@ public class LikeServiceImpl implements LikeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
 
         likeRepository.delete(like);
-        pinRepository.decrementLikeCount(pinId);
 
-        log.info("Pin unliked: pinId={}, userId={}", pinId, userId);
+        pinRepository.decrementLikeCount(pinId);
 
         Pin pin = pinRepository.findByIdWithTags(pinId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Pin with id " + pinId + " not found"));
+
+        entityManager.flush();
+        entityManager.refresh(pin);
+
+        log.info("Pin unliked: pinId={}, userId={}", pinId, userId);
 
         return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }
@@ -93,7 +112,11 @@ public class LikeServiceImpl implements LikeService {
 
         Like like = likeMapper.toEntity(userId, comment);
         likeRepository.save(like);
+
         commentRepository.incrementLikeCount(commentId);
+
+        entityManager.flush();
+        entityManager.refresh(comment);
 
         log.info("Comment liked: commentId={}, userId={}", commentId, userId);
 
@@ -109,14 +132,19 @@ public class LikeServiceImpl implements LikeService {
         Like like = likeRepository.findByUserIdAndCommentId(userId, commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
 
-        likeRepository.delete(like);
-        commentRepository.decrementLikeCount(commentId);
 
-        log.info("Comment unliked: commentId={}, userId={}", commentId, userId);
+        likeRepository.delete(like);
+
+        commentRepository.decrementLikeCount(commentId);
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Comment with id " + commentId + " not found"));
+
+        entityManager.flush();
+        entityManager.refresh(comment);
+
+        log.info("Comment unliked: commentId={}, userId={}", commentId, userId);
 
         return commentMapper.toResponse(comment, false);
     }

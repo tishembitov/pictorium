@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.board;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -38,6 +39,7 @@ public class BoardServiceImpl implements BoardService {
     private final BoardMapper boardMapper;
     private final PinMapper pinMapper;
     private final PinService pinService;
+    private final EntityManager entityManager;
 
     @Override
     public BoardResponse createBoard(BoardCreateRequest request) {
@@ -117,6 +119,9 @@ public class BoardServiceImpl implements BoardService {
             pinRepository.incrementSaveCount(pinId);
         }
 
+        entityManager.flush();
+        entityManager.refresh(pin);
+
         updateSelectedBoard(currentUserId, board);
 
         log.info("Pin saved to board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
@@ -159,6 +164,9 @@ public class BoardServiceImpl implements BoardService {
         if (!wasAlreadySaved && savedCount > 0) {
             pinRepository.incrementSaveCount(pinId);
         }
+
+        entityManager.flush();
+        entityManager.refresh(pin);
 
         if (lastBoard != null) {
             updateSelectedBoard(currentUserId, lastBoard);
