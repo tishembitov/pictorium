@@ -17,6 +17,14 @@ public interface BoardMapper {
 
     List<BoardResponse> toResponseList(List<Board> boards);
 
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "boardPins", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateFromRequest(BoardUpdateRequest request, @MappingTarget Board board);
+
     default BoardWithPinStatusResponse toWithPinStatusResponse(BoardWithPinStatusProjection projection) {
         return new BoardWithPinStatusResponse(
                 projection.getId(),

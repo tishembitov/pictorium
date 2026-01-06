@@ -94,6 +94,31 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
+    public BoardResponse updateBoard(UUID boardId, BoardUpdateRequest request) {
+        String currentUserId = SecurityUtils.requireCurrentUserId();
+
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + boardId));
+
+        checkBoardOwnership(board, currentUserId);
+
+        String newTitle = request.title().trim();
+
+        if (!board.getTitle().equals(newTitle)) {
+            if (boardRepository.existsByUserIdAndTitle(currentUserId, newTitle)) {
+                throw new BadRequestException("Board with title '" + newTitle + "' already exists");
+            }
+        }
+
+        boardMapper.updateFromRequest(request, board);
+        Board updatedBoard = boardRepository.save(board);
+
+        log.info("Board updated: id={}, userId={}", boardId, currentUserId);
+        return boardMapper.toResponse(updatedBoard);
+    }
+
+
+    @Override
     public PinResponse savePinToBoard(UUID boardId, UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 

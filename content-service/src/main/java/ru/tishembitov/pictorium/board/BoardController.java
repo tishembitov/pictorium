@@ -29,6 +29,14 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/{boardId}")
+    public ResponseEntity<BoardResponse> updateBoard(
+            @PathVariable UUID boardId,
+            @Valid @RequestBody BoardUpdateRequest request) {
+        BoardResponse response = boardService.updateBoard(boardId, request);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/with-pin/{pinId}")
     public ResponseEntity<BoardResponse> createBoardAndSavePin(
             @PathVariable UUID pinId,

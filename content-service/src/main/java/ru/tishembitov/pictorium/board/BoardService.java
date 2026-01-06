@@ -11,6 +11,8 @@ public interface BoardService {
 
     BoardResponse createBoard(BoardCreateRequest request);
 
+    BoardResponse updateBoard(UUID boardId, BoardUpdateRequest request);
+
     List<BoardResponse> getMyBoards();
 
     List<BoardResponse> getUserBoards(String userId);
