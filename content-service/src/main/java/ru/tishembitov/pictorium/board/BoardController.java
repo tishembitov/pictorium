@@ -29,7 +29,7 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping("/{boardId}")
+    @PatchMapping("/{boardId}")
     public ResponseEntity<BoardResponse> updateBoard(
             @PathVariable UUID boardId,
             @Valid @RequestBody BoardUpdateRequest request) {
