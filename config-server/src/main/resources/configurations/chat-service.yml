@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/chat_db}
+    username: ${SPRING_DATASOURCE_USERNAME:chat_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:chat123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+# Presence settings
+presence:
+  heartbeat-interval-seconds: 30
+  offline-threshold-seconds: 60
+  typing-timeout-seconds: 3
+
+# Kafka topics
+kafka:
+  topics:
+    chat-events: chat-events
+
+server:
+  port: 8030

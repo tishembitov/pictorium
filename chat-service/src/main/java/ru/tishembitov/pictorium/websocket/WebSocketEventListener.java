@@ -1,0 +1,63 @@
+package ru.tishembitov.pictorium.websocket;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import ru.tishembitov.pictorium.kafka.ChatEvent;
+import ru.tishembitov.pictorium.kafka.ChatEventPublisher;
+import ru.tishembitov.pictorium.kafka.ChatEventType;
+
+import java.security.Principal;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class WebSocketEventListener {
+
+    private final WebSocketSessionManager sessionManager;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatEventPublisher eventPublisher;
+
+    @EventListener
+    public void handleWebSocketConnectListener(SessionConnectedEvent event) {
+        Principal principal = event.getUser();
+        if (principal != null) {
+            String userId = principal.getName();
+            log.info("User connected: {}", userId);
+
+            // Уведомляем других пользователей
+            broadcastPresenceChange(userId, true);
+        }
+    }
+
+    @EventListener
+    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
+        String sessionId = event.getSessionId();
+
+        sessionManager.getUserId(sessionId).ifPresent(userId -> {
+            log.info("User disconnected: {}", userId);
+
+            // Уведомляем других пользователей
+            broadcastPresenceChange(userId, false);
+        });
+    }
+
+    private void broadcastPresenceChange(String userId, boolean online) {
+        WsOutgoingMessage message = online
+                ? WsOutgoingMessage.userOnline(userId)
+                : WsOutgoingMessage.userOffline(userId);
+
+        // Отправляем в общий топик
+        messagingTemplate.convertAndSend("/topic/presence", message);
+
+        // Также публикуем в Kafka для Notification Service
+        eventPublisher.publish(ChatEvent.builder()
+                .type(online ? ChatEventType.USER_ONLINE : ChatEventType.USER_OFFLINE)
+                .senderId(userId)
+                .build());
+    }
+}

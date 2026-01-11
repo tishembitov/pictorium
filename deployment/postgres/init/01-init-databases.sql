@@ -12,6 +12,7 @@ CREATE USER keycloak WITH PASSWORD 'keycloak123';
 CREATE USER content_user WITH PASSWORD 'content123';
 CREATE USER user_service WITH PASSWORD 'user123';
 CREATE USER storage_user WITH PASSWORD 'storage123';
+CREATE USER chat_user WITH PASSWORD 'chat123';
 
 \echo 'Users created successfully!'
 
@@ -46,6 +47,12 @@ CREATE DATABASE storage_db
     LC_COLLATE = 'en_US.utf8'
     LC_CTYPE = 'en_US.utf8';
 
+CREATE DATABASE chat_db
+    WITH OWNER = chat_user
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'en_US.utf8'
+    LC_CTYPE = 'en_US.utf8';
+
 \echo 'Databases created successfully!'
 
 
@@ -55,7 +62,7 @@ GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
 GRANT ALL PRIVILEGES ON DATABASE content_db TO content_user;
 GRANT ALL PRIVILEGES ON DATABASE users_db TO user_service;
 GRANT ALL PRIVILEGES ON DATABASE storage_db TO storage_user;
-
+GRANT ALL PRIVILEGES ON DATABASE chat_db TO chat_user;
 
 -- Keycloak
 \c keycloak
@@ -92,6 +99,15 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO storage_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO storage_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO storage_user;
 \echo 'Storage database configured!'
+
+-- Chat service
+\c chat_db
+GRANT ALL ON SCHEMA public TO chat_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO chat_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO chat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO chat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO chat_user;
+\echo 'Chat database configured!'
 
 \c pictorium
 
