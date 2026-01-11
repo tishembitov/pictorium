@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/admin/**").hasRole("admin")
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/*/v3/api-docs/**").permitAll()
+                        .pathMatchers("/ws/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

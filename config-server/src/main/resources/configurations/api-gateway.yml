@@ -6,7 +6,7 @@ spring:
           enabled: true
 
       routes:
-        # User Service Routes
+        # ==================== User Service Routes ====================
         - id: user-service-route
           uri: lb://USER-SERVICE
           predicates:
@@ -22,7 +22,7 @@ spring:
           predicates:
             - Path=/user-service/**
 
-        # Content Service Routes
+        # ==================== Content Service Routes ====================
         - id: pins-service-route
           uri: lb://CONTENT-SERVICE
           predicates:
@@ -48,14 +48,24 @@ spring:
           predicates:
             - Path=/content-service/**
 
-        # Chat Service Routes
+        # ==================== Chat Service Routes ====================
+        - id: chat-websocket-info
+          uri: lb://CHAT-SERVICE
+          predicates:
+            - Path=/ws/chat/info
+
+        - id: chat-presence-route
+          uri: lb://CHAT-SERVICE
+          predicates:
+            - Path=/api/v1/presence/**
+
         - id: chat-service-route
           uri: lb://CHAT-SERVICE
           predicates:
             - Path=/api/v1/chats/**
 
         - id: chat-websocket-route
-          uri: lb:ws://CHAT-SERVICE
+          uri: lb://CHAT-SERVICE
           predicates:
             - Path=/ws/chat/**
 
@@ -64,7 +74,7 @@ spring:
           predicates:
             - Path=/chat-service/**
 
-        # Notification Service Routes
+        # ==================== Notification Service Routes ====================
         - id: notification-service-route
           uri: lb://NOTIFICATION-SERVICE
           predicates:
@@ -80,7 +90,7 @@ spring:
           predicates:
             - Path=/notification-service/**
 
-        # Recommendation Service Routes
+        # ==================== Recommendation Service Routes ====================
         - id: recommendation-service-route
           uri: lb://RECOMMENDATION-SERVICE
           predicates:
@@ -91,7 +101,7 @@ spring:
           predicates:
             - Path=/recommendation-service/**
 
-        # Search Service Routes
+        # ==================== Search Service Routes ====================
         - id: search-service-route
           uri: lb://SEARCH-SERVICE
           predicates:
@@ -102,7 +112,7 @@ spring:
           predicates:
             - Path=/search-service/**
 
-        # Storage Service Routes
+        # ==================== Storage Service Routes ====================
         - id: storage-service-route
           uri: lb://STORAGE-SERVICE
           predicates:
@@ -113,7 +123,7 @@ spring:
           predicates:
             - Path=/storage-service/**
 
-        # Admin Service Routes
+        # ==================== Admin Service Routes ====================
         - id: admin-service-route
           uri: lb://ADMIN-SERVICE
           predicates:
@@ -155,34 +165,14 @@ springdoc:
     urls:
       - name: api-gateway
         url: /v3/api-docs
-
       - name: user-service
         url: /user-service/v3/api-docs
-
       - name: content-service
         url: /content-service/v3/api-docs
-
       - name: storage-service
         url: /storage-service/v3/api-docs
-#
-#      - name: social-service
-#        url: /social-service/v3/api-docs
-#
-#      - name: chat-service
-#        url: /chat-service/v3/api-docs
-#
-#      - name: notification-service
-#        url: /notification-service/v3/api-docs
-#
-#      - name: recommendation-service
-#        url: /recommendation-service/v3/api-docs
-#
-#      - name: search-service
-#        url: /search-service/v3/api-docs
-#
-#
-#      - name: admin-service
-#        url: /admin-service/v3/api-docs
+      - name: chat-service
+        url: /chat-service/v3/api-docs
 
 server:
   port: 8222
