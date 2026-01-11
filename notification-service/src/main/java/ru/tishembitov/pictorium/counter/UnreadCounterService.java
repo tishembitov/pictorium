@@ -14,18 +14,12 @@ public class UnreadCounterService {
 
     private static final String UNREAD_COUNT_KEY_PREFIX = "notification:unread:";
 
-    /**
-     * Инкремент счетчика
-     */
     public void increment(String userId) {
         String key = UNREAD_COUNT_KEY_PREFIX + userId;
         redisTemplate.opsForValue().increment(key);
         log.debug("Unread counter incremented for user: {}", userId);
     }
 
-    /**
-     * Декремент счетчика
-     */
     public void decrement(String userId, int count) {
         String key = UNREAD_COUNT_KEY_PREFIX + userId;
         Long current = getCount(userId);
@@ -36,18 +30,12 @@ public class UnreadCounterService {
         }
     }
 
-    /**
-     * Сбросить счетчик
-     */
     public void reset(String userId) {
         String key = UNREAD_COUNT_KEY_PREFIX + userId;
         redisTemplate.opsForValue().set(key, 0L);
         log.debug("Unread counter reset for user: {}", userId);
     }
 
-    /**
-     * Получить значение счетчика
-     */
     public Long getCount(String userId) {
         String key = UNREAD_COUNT_KEY_PREFIX + userId;
         Object value = redisTemplate.opsForValue().get(key);
@@ -64,9 +52,6 @@ public class UnreadCounterService {
         }
     }
 
-    /**
-     * Установить значение счетчика
-     */
     public void setCount(String userId, long count) {
         String key = UNREAD_COUNT_KEY_PREFIX + userId;
         redisTemplate.opsForValue().set(key, count);

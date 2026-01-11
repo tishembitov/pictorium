@@ -21,11 +21,7 @@ public class SseEmitterManager {
     @Value("${sse.connection-timeout-ms:3600000}")
     private long connectionTimeout;
 
-    /**
-     * Создать новое SSE соединение
-     */
     public SseEmitter createEmitter(String userId) {
-        // Закрываем предыдущее соединение если есть
         removeEmitter(userId);
 
         SseEmitter emitter = new SseEmitter(connectionTimeout);
@@ -48,15 +44,11 @@ public class SseEmitterManager {
         emitters.put(userId, emitter);
         log.info("SSE connection created for user: {}", userId);
 
-        // Отправляем подтверждение подключения
         sendToUser(userId, SseEvent.connected(userId));
 
         return emitter;
     }
 
-    /**
-     * Отправить событие пользователю
-     */
     public void sendToUser(String userId, SseEvent event) {
         SseEmitter emitter = emitters.get(userId);
         if (emitter == null) {
@@ -75,16 +67,10 @@ public class SseEmitterManager {
         }
     }
 
-    /**
-     * Отправить событие всем подключённым пользователям
-     */
     public void broadcast(SseEvent event) {
         emitters.keySet().forEach(userId -> sendToUser(userId, event));
     }
 
-    /**
-     * Удалить соединение
-     */
     public void removeEmitter(String userId) {
         SseEmitter emitter = emitters.remove(userId);
         if (emitter != null) {
@@ -97,23 +83,14 @@ public class SseEmitterManager {
         }
     }
 
-    /**
-     * Проверить наличие соединения
-     */
     public boolean hasConnection(String userId) {
         return emitters.containsKey(userId);
     }
 
-    /**
-     * Получить количество активных соединений
-     */
     public int getActiveConnectionCount() {
         return emitters.size();
     }
 
-    /**
-     * Heartbeat для поддержания соединений
-     */
     @Scheduled(fixedRateString = "${sse.heartbeat-interval-ms:30000}")
     public void sendHeartbeat() {
         if (emitters.isEmpty()) {

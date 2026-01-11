@@ -34,13 +34,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void createAndSendNotification(BaseEvent event) {
-        // Не отправляем уведомление самому себе
         if (event.getActorId().equals(event.getRecipientId())) {
             log.debug("Skipping self-notification for user {}", event.getActorId());
             return;
         }
 
-        // Проверяем дедупликацию
         if (isDuplicate(event)) {
             log.debug("Duplicate notification detected, skipping: {}", event);
             return;
@@ -49,10 +47,8 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = buildNotification(event);
         Notification saved = notificationRepository.save(notification);
 
-        // Инкремент счетчика
         unreadCounterService.increment(event.getRecipientId());
 
-        // Отправляем через SSE
         NotificationResponse response = notificationMapper.toResponse(saved);
         sseEmitterManager.sendToUser(
                 event.getRecipientId(),
@@ -87,17 +83,14 @@ public class NotificationServiceImpl implements NotificationService {
     public long getUnreadCount() {
         String userId = SecurityUtils.requireCurrentUserId();
 
-        // Сначала пробуем из Redis
         Long cachedCount = unreadCounterService.getCount(userId);
         if (cachedCount != null) {
             return cachedCount;
         }
 
-        // Fallback на БД
         long count = notificationRepository.countByRecipientIdAndStatus(
                 userId, NotificationStatus.UNREAD);
 
-        // Кэшируем результат
         unreadCounterService.setCount(userId, count);
 
         return count;
@@ -164,9 +157,6 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("Notification {} deleted by user {}", id, userId);
     }
 
-    /**
-     * Очистка старых уведомлений (запускается каждый день)
-     */
     @Scheduled(cron = "0 0 3 * * *") // 3:00 AM every day
     public void cleanupOldNotifications() {
         Instant threshold = Instant.now().minus(30, ChronoUnit.DAYS);

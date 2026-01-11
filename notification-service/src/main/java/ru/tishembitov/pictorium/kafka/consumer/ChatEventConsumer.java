@@ -24,7 +24,6 @@ public class ChatEventConsumer {
                 event.getType(), event.getChatId(), event.getActorId(), event.getRecipientId());
 
         try {
-            // Обрабатываем только NEW_MESSAGE
             if ("NEW_MESSAGE".equals(event.getType())) {
                 notificationService.createAndSendNotification(event);
             }

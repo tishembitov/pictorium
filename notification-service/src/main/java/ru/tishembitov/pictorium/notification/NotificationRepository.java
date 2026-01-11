@@ -15,26 +15,16 @@ import java.util.UUID;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
-    /**
-     * Получить уведомления пользователя
-     */
     Page<Notification> findByRecipientIdOrderByCreatedAtDesc(
             String recipientId, Pageable pageable);
 
-    /**
-     * Получить непрочитанные уведомления
-     */
+
     Page<Notification> findByRecipientIdAndStatusOrderByCreatedAtDesc(
             String recipientId, NotificationStatus status, Pageable pageable);
 
-    /**
-     * Подсчитать непрочитанные
-     */
+
     long countByRecipientIdAndStatus(String recipientId, NotificationStatus status);
 
-    /**
-     * Пометить все как прочитанные
-     */
     @Modifying
     @Query("""
         UPDATE Notification n 
@@ -47,9 +37,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             @Param("newStatus") NotificationStatus newStatus,
             @Param("readAt") Instant readAt);
 
-    /**
-     * Пометить конкретные как прочитанные
-     */
     @Modifying
     @Query("""
         UPDATE Notification n 
@@ -62,16 +49,10 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             @Param("newStatus") NotificationStatus newStatus,
             @Param("readAt") Instant readAt);
 
-    /**
-     * Удалить старые уведомления
-     */
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.createdAt < :threshold")
     int deleteOlderThan(@Param("threshold") Instant threshold);
 
-    /**
-     * Проверить существование уведомления (для дедупликации)
-     */
     boolean existsByRecipientIdAndActorIdAndTypeAndReferenceId(
             String recipientId, String actorId, NotificationType type, UUID referenceId);
 }
