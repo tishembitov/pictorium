@@ -8,11 +8,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.counter.UnreadCounterService;
-import ru.tishembitov.pictorium.exception.NotificationNotFoundException;
+import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
 import ru.tishembitov.pictorium.kafka.event.BaseEvent;
 import ru.tishembitov.pictorium.kafka.event.ChatEvent;
 import ru.tishembitov.pictorium.kafka.event.ContentEvent;
-import ru.tishembitov.pictorium.kafka.event.UserEvent;
 import ru.tishembitov.pictorium.sse.SseEmitterManager;
 import ru.tishembitov.pictorium.sse.SseEvent;
 import ru.tishembitov.pictorium.util.SecurityUtils;
@@ -150,11 +149,11 @@ public class NotificationServiceImpl implements NotificationService {
         String userId = SecurityUtils.requireCurrentUserId();
 
         Notification notification = notificationRepository.findById(id)
-                .orElseThrow(() -> new NotificationNotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Notification not found: " + id));
 
         if (!notification.getRecipientId().equals(userId)) {
-            throw new NotificationNotFoundException("Notification not found: " + id);
+            throw new ResourceNotFoundException("Notification not found: " + id);
         }
 
         if (notification.getStatus() == NotificationStatus.UNREAD) {
