@@ -21,22 +21,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Префикс для подписок (server → client)
         registry.enableSimpleBroker("/topic", "/queue");
-
-        // Префикс для сообщений от клиента (client → server)
         registry.setApplicationDestinationPrefixes("/app");
-
-        // Для персональных сообщений
         registry.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws/chat")
-                .withSockJS();
-
-        registry.addEndpoint("/ws/chat");
+                .setAllowedOriginPatterns("*");
     }
 
     @Override

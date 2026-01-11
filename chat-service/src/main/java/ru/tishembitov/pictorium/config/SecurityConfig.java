@@ -29,7 +29,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/*/v3/api-docs/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll() // WebSocket handshake
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws/chat/**").permitAll()
+                        .requestMatchers("/ws/chat/info/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
