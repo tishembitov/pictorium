@@ -9,20 +9,24 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.SubscriptionAlreadyExistsException;
 import ru.tishembitov.pictorium.exception.SubscriptionNotFoundException;
-import ru.tishembitov.pictorium.user.*;
-
+import ru.tishembitov.pictorium.kafka.UserEvent;
+import ru.tishembitov.pictorium.kafka.UserEventPublisher;
+import ru.tishembitov.pictorium.kafka.UserEventType;
+import ru.tishembitov.pictorium.user.User;
+import ru.tishembitov.pictorium.user.UserMapper;
+import ru.tishembitov.pictorium.user.UserResponse;
+import ru.tishembitov.pictorium.user.UserService;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
-public class SubscriptionServiceImpl implements SubscriptionService{
+public class SubscriptionServiceImpl implements SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserService userService;
     private final UserMapper userMapper;
-
-    // private final UpdateService updateService; // Для создания уведомлений
+    private final UserEventPublisher eventPublisher;
 
     @Transactional
     public SubscriptionResponse followUser(String id, String userIdToFollow) {
@@ -45,8 +49,13 @@ public class SubscriptionServiceImpl implements SubscriptionService{
 
         subscriptionRepository.save(subscription);
 
-        // TODO: Асинхронно создать уведомление (аналог make_update_follow.delay)
-        // updateService.createFollowUpdate(userIdToFollow, currentUserId);
+        eventPublisher.publish(UserEvent.builder()
+                .type(UserEventType.USER_FOLLOWED.name())
+                .actorId(id)
+                .recipientId(userIdToFollow)
+                .previewText(currentUser.getUsername())
+                .previewImageId(currentUser.getImageId())
+                .build());
 
         log.info("User {} followed user {}", id, userIdToFollow);
         return new SubscriptionResponse("ok");
@@ -65,23 +74,19 @@ public class SubscriptionServiceImpl implements SubscriptionService{
     }
 
     public FollowCheckResponse checkUserFollow(String id, String userIdToCheck) {
-
         boolean isFollowing = subscriptionRepository.existsByFollowerIdAndFollowingId(id, userIdToCheck);
-
         return new FollowCheckResponse(isFollowing);
     }
 
     public Page<UserResponse> getFollowers(String userId, Pageable pageable) {
         userService.validateUserExists(userId);
         Page<User> followersPage = subscriptionRepository.findFollowersByUserId(userId, pageable);
-
         return followersPage.map(userMapper::toResponse);
     }
 
     public Page<UserResponse> getFollowing(String userId, Pageable pageable) {
         userService.validateUserExists(userId);
         Page<User> followingPage = subscriptionRepository.findFollowingByUserId(userId, pageable);
-
         return followingPage.map(userMapper::toResponse);
     }
 }

@@ -70,10 +70,10 @@ spring:
           predicates:
             - Path=/api/v1/notifications/**
 
-        - id: notification-websocket-route
-          uri: lb:ws://NOTIFICATION-SERVICE
+        - id: notification-sse-route
+          uri: lb://NOTIFICATION-SERVICE
           predicates:
-            - Path=/ws/notifications/**
+            - Path=/api/v1/sse/**
 
         - id: notification-service-swagger
           uri: lb://NOTIFICATION-SERVICE

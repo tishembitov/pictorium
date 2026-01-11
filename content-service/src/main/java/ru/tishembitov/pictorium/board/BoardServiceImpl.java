@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
+import ru.tishembitov.pictorium.kafka.ContentEvent;
+import ru.tishembitov.pictorium.kafka.ContentEventPublisher;
+import ru.tishembitov.pictorium.kafka.ContentEventType;
 import ru.tishembitov.pictorium.pin.Pin;
 import ru.tishembitov.pictorium.pin.PinInteractionDto;
 import ru.tishembitov.pictorium.pin.PinMapper;
@@ -40,6 +43,7 @@ public class BoardServiceImpl implements BoardService {
     private final PinMapper pinMapper;
     private final PinService pinService;
     private final EntityManager entityManager;
+    private final ContentEventPublisher eventPublisher;
 
     @Override
     public BoardResponse createBoard(BoardCreateRequest request) {
@@ -150,6 +154,17 @@ public class BoardServiceImpl implements BoardService {
         updateSelectedBoard(currentUserId, board);
 
         log.info("Pin saved to board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
+
+        if (!wasAlreadySaved && !pin.getAuthorId().equals(currentUserId)) {
+            eventPublisher.publish(ContentEvent.builder()
+                    .type(ContentEventType.PIN_SAVED.name())
+                    .actorId(currentUserId)
+                    .recipientId(pin.getAuthorId())
+                    .pinId(pinId)
+                    .previewText(pin.getTitle())
+                    .previewImageId(pin.getThumbnailId())
+                    .build());
+        }
 
         return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }

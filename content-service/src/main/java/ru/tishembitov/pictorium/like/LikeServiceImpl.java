@@ -1,5 +1,3 @@
-// src/main/java/ru/tishembitov/pictorium/like/LikeServiceImpl.java
-
 package ru.tishembitov.pictorium.like;
 
 import jakarta.persistence.EntityManager;
@@ -9,17 +7,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import ru.tishembitov.pictorium.comment.Comment;
 import ru.tishembitov.pictorium.comment.CommentMapper;
 import ru.tishembitov.pictorium.comment.CommentRepository;
 import ru.tishembitov.pictorium.comment.CommentResponse;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
-import ru.tishembitov.pictorium.pin.Pin;
-import ru.tishembitov.pictorium.pin.PinMapper;
-import ru.tishembitov.pictorium.pin.PinRepository;
-import ru.tishembitov.pictorium.pin.PinResponse;
-import ru.tishembitov.pictorium.pin.PinService;
+import ru.tishembitov.pictorium.kafka.ContentEvent;
+import ru.tishembitov.pictorium.kafka.ContentEventPublisher;
+import ru.tishembitov.pictorium.kafka.ContentEventType;
+import ru.tishembitov.pictorium.pin.*;
 import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.util.UUID;
@@ -38,6 +34,7 @@ public class LikeServiceImpl implements LikeService {
     private final CommentMapper commentMapper;
     private final LikeMapper likeMapper;
     private final EntityManager entityManager;
+    private final ContentEventPublisher eventPublisher;
 
     @Override
     public PinResponse likePin(UUID pinId) {
@@ -60,6 +57,17 @@ public class LikeServiceImpl implements LikeService {
         entityManager.refresh(pin);
 
         log.info("Pin liked: pinId={}, userId={}", pinId, userId);
+
+        if (!pin.getAuthorId().equals(userId)) {
+            eventPublisher.publish(ContentEvent.builder()
+                    .type(ContentEventType.PIN_LIKED.name())
+                    .actorId(userId)
+                    .recipientId(pin.getAuthorId())
+                    .pinId(pinId)
+                    .previewText(pin.getTitle())
+                    .previewImageId(pin.getThumbnailId())
+                    .build());
+        }
 
         return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
     }
@@ -120,7 +128,16 @@ public class LikeServiceImpl implements LikeService {
 
         log.info("Comment liked: commentId={}, userId={}", commentId, userId);
 
-        // TODO: Send notification if comment.getUserId() != userId
+        if (!comment.getUserId().equals(userId)) {
+            eventPublisher.publish(ContentEvent.builder()
+                    .type(ContentEventType.COMMENT_LIKED.name())
+                    .actorId(userId)
+                    .recipientId(comment.getUserId())
+                    .pinId(comment.getPin().getId())
+                    .commentId(commentId)
+                    .previewText(truncate(comment.getContent(), 100))
+                    .build());
+        }
 
         return commentMapper.toResponse(comment, true);
     }
@@ -131,7 +148,6 @@ public class LikeServiceImpl implements LikeService {
 
         Like like = likeRepository.findByUserIdAndCommentId(userId, commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
-
 
         likeRepository.delete(like);
 
@@ -158,5 +174,10 @@ public class LikeServiceImpl implements LikeService {
 
         return likeRepository.findByCommentIdOrderByCreatedAtDesc(commentId, pageable)
                 .map(likeMapper::toResponse);
+    }
+
+    private String truncate(String text, int maxLength) {
+        if (text == null) return null;
+        return text.length() > maxLength ? text.substring(0, maxLength) + "..." : text;
     }
 }

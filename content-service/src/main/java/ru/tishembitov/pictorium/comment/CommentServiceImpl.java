@@ -11,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.BadRequestException;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
+import ru.tishembitov.pictorium.kafka.ContentEvent;
+import ru.tishembitov.pictorium.kafka.ContentEventPublisher;
+import ru.tishembitov.pictorium.kafka.ContentEventType;
 import ru.tishembitov.pictorium.like.LikeRepository;
 import ru.tishembitov.pictorium.pin.Pin;
 import ru.tishembitov.pictorium.pin.PinRepository;
@@ -31,6 +34,7 @@ public class CommentServiceImpl implements CommentService {
     private final PinRepository pinRepository;
     private final CommentMapper commentMapper;
     private final ImageService imageService;
+    private final ContentEventPublisher eventPublisher;
 
     @Override
     public CommentResponse createCommentOnPin(UUID pinId, @Valid CommentCreateRequest request) {
@@ -43,6 +47,18 @@ public class CommentServiceImpl implements CommentService {
         comment = commentRepository.save(comment);
 
         pinRepository.incrementCommentCount(pinId);
+
+        if (!pin.getAuthorId().equals(currentUserId)) {
+            eventPublisher.publish(ContentEvent.builder()
+                    .type(ContentEventType.PIN_COMMENTED.name())
+                    .actorId(currentUserId)
+                    .recipientId(pin.getAuthorId())
+                    .pinId(pinId)
+                    .commentId(comment.getId())
+                    .previewText(truncate(request.content()))
+                    .previewImageId(pin.getThumbnailId())
+                    .build());
+        }
 
         return commentMapper.toResponse(comment, false);
     }
@@ -82,6 +98,18 @@ public class CommentServiceImpl implements CommentService {
 
         commentRepository.incrementReplyCount(commentId);
         pinRepository.incrementCommentCount(pin.getId());
+
+        if (!parentComment.getUserId().equals(currentUserId)) {
+            eventPublisher.publish(ContentEvent.builder()
+                    .type(ContentEventType.COMMENT_REPLIED.name())
+                    .actorId(currentUserId)
+                    .recipientId(parentComment.getUserId())
+                    .pinId(pin.getId())
+                    .commentId(reply.getId())
+                    .secondaryRefId(parentComment.getId())
+                    .previewText(truncate(request.content()))
+                    .build());
+        }
 
         return commentMapper.toResponse(reply, false);
     }
@@ -157,7 +185,6 @@ public class CommentServiceImpl implements CommentService {
             commentRepository.decrementReplyCount(comment.getParentComment().getId());
             pinRepository.decrementCommentCount(pinId);
         } else {
-
             List<String> replyImageIds = commentRepository.findImageIdsByParentId(commentId);
 
             long replyCount = commentRepository.countByParentCommentId(commentId);
@@ -195,5 +222,10 @@ public class CommentServiceImpl implements CommentService {
         if (!comment.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this comment");
         }
+    }
+
+    private String truncate(String text) {
+        if (text == null) return null;
+        return text.length() > 100 ? text.substring(0, 100) + "..." : text;
     }
 }

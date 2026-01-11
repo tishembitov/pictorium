@@ -13,6 +13,7 @@ CREATE USER content_user WITH PASSWORD 'content123';
 CREATE USER user_service WITH PASSWORD 'user123';
 CREATE USER storage_user WITH PASSWORD 'storage123';
 CREATE USER chat_user WITH PASSWORD 'chat123';
+CREATE USER notification_user WITH PASSWORD 'notification123';
 
 \echo 'Users created successfully!'
 
@@ -53,6 +54,13 @@ CREATE DATABASE chat_db
     LC_COLLATE = 'en_US.utf8'
     LC_CTYPE = 'en_US.utf8';
 
+-- Notification service database
+CREATE DATABASE notification_db
+    WITH OWNER = notification_user
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'en_US.utf8'
+    LC_CTYPE = 'en_US.utf8';
+
 \echo 'Databases created successfully!'
 
 
@@ -63,6 +71,7 @@ GRANT ALL PRIVILEGES ON DATABASE content_db TO content_user;
 GRANT ALL PRIVILEGES ON DATABASE users_db TO user_service;
 GRANT ALL PRIVILEGES ON DATABASE storage_db TO storage_user;
 GRANT ALL PRIVILEGES ON DATABASE chat_db TO chat_user;
+GRANT ALL PRIVILEGES ON DATABASE notification_db TO notification_user;
 
 -- Keycloak
 \c keycloak
@@ -108,6 +117,15 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO chat_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO chat_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO chat_user;
 \echo 'Chat database configured!'
+
+-- Notification service
+\c notification_db
+GRANT ALL ON SCHEMA public TO notification_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO notification_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO notification_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO notification_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO notification_user;
+\echo 'Notification database configured!'
 
 \c pictorium
 
