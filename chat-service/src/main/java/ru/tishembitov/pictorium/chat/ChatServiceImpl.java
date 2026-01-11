@@ -84,7 +84,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private void validateParticipant(Chat chat, String userId) {
-        if (!chat.isParticipant(userId)) {
+        if (chat.isParticipant(userId)) {
             throw new AccessDeniedException("You are not a participant of this chat");
         }
     }
