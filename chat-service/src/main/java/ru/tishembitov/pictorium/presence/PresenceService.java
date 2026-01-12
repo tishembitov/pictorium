@@ -80,7 +80,7 @@ public class PresenceService {
 
         Optional<Instant> lastSeen = getLastSeen(userId);
         if (lastSeen.isEmpty()) {
-            return PresenceStatus.OFFLINE;
+            return PresenceStatus.LONG_AGO;
         }
 
         return calculateStatus(lastSeen.get());
@@ -90,7 +90,7 @@ public class PresenceService {
         boolean isOnline = isUserOnline(userId);
         Instant lastSeen = getLastSeen(userId).orElse(null);
         PresenceStatus status = isOnline ? PresenceStatus.ONLINE :
-                (lastSeen != null ? calculateStatus(lastSeen) : PresenceStatus.OFFLINE);
+                (lastSeen != null ? calculateStatus(lastSeen) : PresenceStatus.LONG_AGO);
 
         return new UserPresenceResponse.UserPresence(status, lastSeen, isOnline);
     }

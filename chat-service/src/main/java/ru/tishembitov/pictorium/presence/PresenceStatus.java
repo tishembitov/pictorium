@@ -7,6 +7,5 @@ public enum PresenceStatus {
     TODAY,
     YESTERDAY,
     WEEK,
-    LONG_AGO,
-    OFFLINE
+    LONG_AGO
 }

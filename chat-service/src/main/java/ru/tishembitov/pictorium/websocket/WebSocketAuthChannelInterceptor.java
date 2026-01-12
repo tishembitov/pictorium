@@ -1,21 +1,20 @@
 package ru.tishembitov.pictorium.websocket;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import ru.tishembitov.pictorium.presence.PresenceService;
 
+import java.security.Principal;
 import java.util.List;
 
 @Component
@@ -61,11 +60,11 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 
         try {
             Jwt jwt = jwtDecoder.decode(token);
-            Authentication auth = new JwtAuthenticationToken(jwt);
-            accessor.setUser(auth);
-
             String userId = jwt.getSubject();
             String sessionId = accessor.getSessionId();
+
+            Principal userPrincipal = () -> userId;
+            accessor.setUser(userPrincipal);
 
             sessionManager.registerSession(sessionId, userId);
             presenceService.updatePresence(userId);

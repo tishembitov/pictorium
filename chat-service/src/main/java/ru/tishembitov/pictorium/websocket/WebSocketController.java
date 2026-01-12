@@ -60,7 +60,7 @@ public class WebSocketController {
 
     private void handleSendMessage(String userId, WsIncomingMessage incoming) {
         UUID chatId = incoming.getChatId();
-        log.info("📨 Processing SEND_MESSAGE: userId={}, chatId={}", userId, chatId);
+        log.info("Processing SEND_MESSAGE: userId={}, chatId={}", userId, chatId);
 
         MessageType type = incoming.getMessageType() != null
                 ? incoming.getMessageType()
@@ -82,14 +82,12 @@ public class WebSocketController {
         sendToUser(userId, outgoing);
 
         String recipientId = message.receiverId();
-        if (sessionManager.isUserInChat(recipientId, chatId)) {
+
+        if (sessionManager.isUserOnline(recipientId)) {
             sendToUser(recipientId, outgoing);
-            log.debug("Message delivered to recipient {} in real-time", recipientId);
-        } else if (sessionManager.isUserOnline(recipientId)) {
-            sendToUser(recipientId, outgoing);
-            log.debug("Message notification sent to online recipient {}", recipientId);
+            log.info("Message sent to recipient {} via WebSocket", recipientId);
         } else {
-            log.debug("Recipient {} is offline, will receive via Kafka notification", recipientId);
+            log.info("Recipient {} is offline, message will be delivered via Kafka", recipientId);
         }
     }
 
@@ -179,6 +177,8 @@ public class WebSocketController {
     }
 
     private void sendToUser(String userId, WsOutgoingMessage message) {
+        log.debug("Sending to user {}: {}", userId, message.getType());
+
         messagingTemplate.convertAndSendToUser(
                 userId,
                 "/queue/messages",
