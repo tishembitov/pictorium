@@ -161,7 +161,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private void validateParticipant(Chat chat, String userId) {
-        if (chat.isParticipant(userId)) {
+        if (chat.isNotParticipant(userId)) {
             throw new AccessDeniedException("You are not a participant of this chat");
         }
     }

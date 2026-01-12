@@ -21,6 +21,15 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
     List<Chat> findAllByUserId(@Param("userId") String userId);
 
     @Query("""
+    SELECT c FROM Chat c 
+    LEFT JOIN c.messages m
+    WHERE c.senderId = :userId OR c.recipientId = :userId 
+    GROUP BY c
+    ORDER BY MAX(m.createdAt) DESC NULLS LAST, c.updatedAt DESC
+""")
+    List<Chat> findAllByUserIdOrderedByLastMessage(@Param("userId") String userId);
+
+    @Query("""
         SELECT c FROM Chat c 
         WHERE (c.senderId = :userId1 AND c.recipientId = :userId2) 
            OR (c.senderId = :userId2 AND c.recipientId = :userId1)

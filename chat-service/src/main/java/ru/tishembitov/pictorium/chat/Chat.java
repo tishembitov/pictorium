@@ -51,9 +51,12 @@ public class Chat {
 
 
     public boolean isParticipant(String userId) {
-        return !senderId.equals(userId) && !recipientId.equals(userId);
+        return senderId.equals(userId) || recipientId.equals(userId);
     }
 
+    public boolean isNotParticipant(String userId) {
+        return !isParticipant(userId);
+    }
 
     public String getOtherParticipantId(String userId) {
         return senderId.equals(userId) ? recipientId : senderId;

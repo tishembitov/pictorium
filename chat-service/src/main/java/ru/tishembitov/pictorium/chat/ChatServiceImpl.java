@@ -42,7 +42,7 @@ public class ChatServiceImpl implements ChatService {
     @Transactional(readOnly = true)
     public List<ChatResponse> getMyChats() {
         String currentUserId = SecurityUtils.requireCurrentUserId();
-        List<Chat> chats = chatRepository.findAllByUserId(currentUserId);
+        List<Chat> chats = chatRepository.findAllByUserIdOrderedByLastMessage(currentUserId);
         return chatMapper.toResponseList(chats, currentUserId);
     }
 
@@ -84,7 +84,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private void validateParticipant(Chat chat, String userId) {
-        if (chat.isParticipant(userId)) {
+        if (chat.isNotParticipant(userId)) {
             throw new AccessDeniedException("You are not a participant of this chat");
         }
     }
