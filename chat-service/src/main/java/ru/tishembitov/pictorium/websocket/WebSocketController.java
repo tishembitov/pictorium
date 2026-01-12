@@ -92,33 +92,27 @@ public class WebSocketController {
     }
 
     private void handleTypingStart(String userId, UUID chatId) {
-        if (chatId == null) {
-            log.warn("TYPING_START received without chatId");
-            return;
-        }
+        if (chatId == null) return;
 
         presenceService.startTyping(userId, chatId);
 
         Chat chat = chatService.getChatEntityById(chatId);
         String recipientId = chat.getOtherParticipantId(userId);
 
-        if (sessionManager.isUserInChat(recipientId, chatId)) {
+        if (sessionManager.isUserOnline(recipientId)) {
             sendToUser(recipientId, WsOutgoingMessage.typing(chatId, userId));
         }
     }
 
     private void handleTypingStop(String userId, UUID chatId) {
-        if (chatId == null) {
-            log.warn("TYPING_STOP received without chatId");
-            return;
-        }
+        if (chatId == null) return;
 
         presenceService.stopTyping(userId, chatId);
 
         Chat chat = chatService.getChatEntityById(chatId);
         String recipientId = chat.getOtherParticipantId(userId);
 
-        if (sessionManager.isUserInChat(recipientId, chatId)) {
+        if (sessionManager.isUserOnline(recipientId)) {
             sendToUser(recipientId, WsOutgoingMessage.stoppedTyping(chatId, userId));
         }
     }
