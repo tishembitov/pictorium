@@ -14,15 +14,20 @@ public class PresenceController {
     private final PresenceService presenceService;
 
     @GetMapping
-    public ResponseEntity<UserPresenceResponse> getOnlineStatus(
+    public ResponseEntity<UserPresenceResponse> getPresenceData(
             @RequestParam Set<String> userIds
     ) {
-        return ResponseEntity.ok(
-                new UserPresenceResponse(presenceService.getOnlineStatus(userIds))
-        );
+        return ResponseEntity.ok(presenceService.getPresenceData(userIds));
     }
 
     @GetMapping("/{userId}")
+    public ResponseEntity<UserPresenceResponse.UserPresence> getUserPresence(
+            @PathVariable String userId
+    ) {
+        return ResponseEntity.ok(presenceService.getUserPresence(userId));
+    }
+
+    @GetMapping("/{userId}/online")
     public ResponseEntity<Boolean> isUserOnline(@PathVariable String userId) {
         return ResponseEntity.ok(presenceService.isUserOnline(userId));
     }

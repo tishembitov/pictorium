@@ -1,5 +1,7 @@
 package ru.tishembitov.pictorium.chat;
 
+import ru.tishembitov.pictorium.message.MessageType;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,5 +12,8 @@ public record ChatResponse(
         Instant lastMessageTime,
         int unreadCount,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+
+        MessageType lastMessageType,
+        String lastMessageImageId
 ) {}

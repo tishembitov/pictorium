@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,25 +21,38 @@ public class PresenceService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String PRESENCE_KEY_PREFIX = "presence:user:";
+    private static final String LAST_SEEN_KEY_PREFIX = "lastseen:user:";
     private static final String ACTIVE_CHAT_KEY_PREFIX = "active-chat:user:";
     private static final String TYPING_KEY_PREFIX = "typing:chat:";
 
-    @Value("${presence.offline-threshold-seconds:60}")
-    private int offlineThresholdSeconds;
+    @Value("${presence.online-threshold-seconds:60}")
+    private int onlineThresholdSeconds;
 
     @Value("${presence.typing-timeout-seconds:3}")
     private int typingTimeoutSeconds;
 
     public void updatePresence(String userId) {
-        String key = PRESENCE_KEY_PREFIX + userId;
-        redisTemplate.opsForValue().set(key, Instant.now().toEpochMilli());
-        redisTemplate.expire(key, Duration.ofSeconds(offlineThresholdSeconds));
+        Instant now = Instant.now();
+
+        String presenceKey = PRESENCE_KEY_PREFIX + userId;
+        redisTemplate.opsForValue().set(presenceKey, now.toEpochMilli());
+        redisTemplate.expire(presenceKey, Duration.ofSeconds(onlineThresholdSeconds));
+
+        String lastSeenKey = LAST_SEEN_KEY_PREFIX + userId;
+        redisTemplate.opsForValue().set(lastSeenKey, now.toEpochMilli());
+        redisTemplate.expire(lastSeenKey, Duration.ofDays(30));
+
         log.debug("Presence updated for user: {}", userId);
     }
 
     public void removePresence(String userId) {
         redisTemplate.delete(PRESENCE_KEY_PREFIX + userId);
         redisTemplate.delete(ACTIVE_CHAT_KEY_PREFIX + userId);
+
+        String lastSeenKey = LAST_SEEN_KEY_PREFIX + userId;
+        redisTemplate.opsForValue().set(lastSeenKey, Instant.now().toEpochMilli());
+        redisTemplate.expire(lastSeenKey, Duration.ofDays(30));
+
         log.debug("Presence removed for user: {}", userId);
     }
 
@@ -45,24 +60,95 @@ public class PresenceService {
         return Boolean.TRUE.equals(redisTemplate.hasKey(PRESENCE_KEY_PREFIX + userId));
     }
 
+    public Optional<Instant> getLastSeen(String userId) {
+        Object value = redisTemplate.opsForValue().get(LAST_SEEN_KEY_PREFIX + userId);
+        if (value == null) {
+            return Optional.empty();
+        }
+        try {
+            long timestamp = value instanceof Long ? (Long) value : Long.parseLong(value.toString());
+            return Optional.of(Instant.ofEpochMilli(timestamp));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public PresenceStatus getPresenceStatus(String userId) {
+        if (isUserOnline(userId)) {
+            return PresenceStatus.ONLINE;
+        }
+
+        Optional<Instant> lastSeen = getLastSeen(userId);
+        if (lastSeen.isEmpty()) {
+            return PresenceStatus.OFFLINE;
+        }
+
+        return calculateStatus(lastSeen.get());
+    }
+
+    public UserPresenceResponse.UserPresence getUserPresence(String userId) {
+        boolean isOnline = isUserOnline(userId);
+        Instant lastSeen = getLastSeen(userId).orElse(null);
+        PresenceStatus status = isOnline ? PresenceStatus.ONLINE :
+                (lastSeen != null ? calculateStatus(lastSeen) : PresenceStatus.OFFLINE);
+
+        return new UserPresenceResponse.UserPresence(status, lastSeen, isOnline);
+    }
+
+    public UserPresenceResponse getPresenceData(Set<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return new UserPresenceResponse(Collections.emptyMap());
+        }
+
+        Map<String, UserPresenceResponse.UserPresence> presenceData = userIds.stream()
+                .collect(Collectors.toMap(
+                        userId -> userId,
+                        this::getUserPresence
+                ));
+
+        return new UserPresenceResponse(presenceData);
+    }
+
     public Map<String, Boolean> getOnlineStatus(Set<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        List<String> keys = userIds.stream()
-                .map(id -> PRESENCE_KEY_PREFIX + id)
-                .toList();
+        return userIds.stream()
+                .collect(Collectors.toMap(
+                        userId -> userId,
+                        this::isUserOnline
+                ));
+    }
 
-        List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+    private PresenceStatus calculateStatus(Instant lastSeen) {
+        Instant now = Instant.now();
+        Duration timeSince = Duration.between(lastSeen, now);
 
-        Map<String, Boolean> result = new HashMap<>();
-        int i = 0;
-        for (String userId : userIds) {
-            result.put(userId, values != null && values.get(i) != null);
-            i++;
+        if (timeSince.toMinutes() < 5) {
+            return PresenceStatus.RECENTLY;
         }
-        return result;
+
+        if (timeSince.toHours() < 1) {
+            return PresenceStatus.LAST_HOUR;
+        }
+
+        LocalDate lastSeenDate = lastSeen.atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+
+        if (lastSeenDate.equals(today)) {
+            return PresenceStatus.TODAY;
+        }
+
+        if (lastSeenDate.equals(today.minusDays(1))) {
+            return PresenceStatus.YESTERDAY;
+        }
+
+        if (timeSince.toDays() <= 7) {
+            return PresenceStatus.WEEK;
+        }
+
+        return PresenceStatus.LONG_AGO;
     }
 
     public void setActiveChat(String userId, UUID chatId) {

@@ -1,11 +1,16 @@
 package ru.tishembitov.pictorium.chat;
 
-import org.mapstruct.*;
+import org.mapstruct.Context;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import ru.tishembitov.pictorium.message.Message;
 import ru.tishembitov.pictorium.message.MessageState;
 import ru.tishembitov.pictorium.message.MessageType;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ChatMapper {
@@ -14,6 +19,8 @@ public interface ChatMapper {
     @Mapping(target = "lastMessage", expression = "java(getLastMessagePreview(chat))")
     @Mapping(target = "lastMessageTime", expression = "java(getLastMessageTime(chat))")
     @Mapping(target = "unreadCount", expression = "java(countUnreadMessages(chat, currentUserId))")
+    @Mapping(target = "lastMessageType", expression = "java(getLastMessageType(chat))")
+    @Mapping(target = "lastMessageImageId", expression = "java(getLastMessageImageId(chat))")
     ChatResponse toResponse(Chat chat, @Context String currentUserId);
 
     default List<ChatResponse> toResponseList(List<Chat> chats, String currentUserId) {
@@ -22,25 +29,47 @@ public interface ChatMapper {
                 .toList();
     }
 
-    default String getLastMessagePreview(Chat chat) {
+    default Optional<Message> getLastMessage(Chat chat) {
         if (chat.getMessages() == null || chat.getMessages().isEmpty()) {
-            return null;
+            return Optional.empty();
         }
-        Message lastMessage = chat.getMessages().get(0);
-        if (lastMessage.getType() != MessageType.TEXT) {
-            return "📎 Attachment";
-        }
-        String content = lastMessage.getContent();
-        return content != null && content.length() > 50
-                ? content.substring(0, 50) + "..."
-                : content;
+        return Optional.of(chat.getMessages().get(0));
     }
 
-    default java.time.Instant getLastMessageTime(Chat chat) {
-        if (chat.getMessages() == null || chat.getMessages().isEmpty()) {
-            return chat.getCreatedAt();
-        }
-        return chat.getMessages().get(0).getCreatedAt();
+    default String getLastMessagePreview(Chat chat) {
+        return getLastMessage(chat)
+                .map(message -> {
+                    if (message.getType() != MessageType.TEXT) {
+                        return null;
+                    }
+                    String content = message.getContent();
+                    if (content == null || content.isEmpty()) {
+                        return null;
+                    }
+                    return content.length() > 50
+                            ? content.substring(0, 50) + "..."
+                            : content;
+                })
+                .orElse(null);
+    }
+
+    default Instant getLastMessageTime(Chat chat) {
+        return getLastMessage(chat)
+                .map(Message::getCreatedAt)
+                .orElse(chat.getCreatedAt());
+    }
+
+    default MessageType getLastMessageType(Chat chat) {
+        return getLastMessage(chat)
+                .map(Message::getType)
+                .orElse(null);
+    }
+
+    default String getLastMessageImageId(Chat chat) {
+        return getLastMessage(chat)
+                .filter(m -> m.getType() == MessageType.IMAGE)
+                .map(Message::getImageId)
+                .orElse(null);
     }
 
     default int countUnreadMessages(Chat chat, String currentUserId) {
