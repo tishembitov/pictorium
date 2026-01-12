@@ -10,12 +10,17 @@ public interface MessageService {
 
     MessageResponse sendMessage(UUID chatId, String content, MessageType type, String imageId);
 
+    MessageResponse sendMessage(UUID chatId, String senderId, String content, MessageType type, String imageId);
+
     Page<MessageResponse> getChatMessages(UUID chatId, Pageable pageable);
 
     List<MessageResponse> getAllChatMessages(UUID chatId);
 
     int markAsRead(UUID chatId);
 
+    int markAsRead(UUID chatId, String userId);
 
     int getUnreadCount(UUID chatId);
+
+    int getUnreadCount(UUID chatId, String userId);
 }

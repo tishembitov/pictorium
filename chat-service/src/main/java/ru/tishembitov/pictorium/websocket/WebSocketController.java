@@ -37,6 +37,9 @@ public class WebSocketController {
         String userId = principal.getName();
         UUID chatId = incoming.getChatId();
 
+        log.debug("Received WS message: type={}, chatId={}, userId={}",
+                incoming.getType(), chatId, userId);
+
         try {
             switch (incoming.getType()) {
                 case SEND_MESSAGE -> handleSendMessage(userId, incoming);
@@ -49,39 +52,53 @@ public class WebSocketController {
                 default -> log.warn("Unknown message type: {}", incoming.getType());
             }
         } catch (Exception e) {
-            log.error("Error handling WebSocket message", e);
+            log.error("Error handling WebSocket message: type={}, userId={}, error={}",
+                    incoming.getType(), userId, e.getMessage(), e);
             sendToUser(userId, WsOutgoingMessage.error(e.getMessage()));
         }
     }
 
     private void handleSendMessage(String userId, WsIncomingMessage incoming) {
+        UUID chatId = incoming.getChatId();
+        log.info("📨 Processing SEND_MESSAGE: userId={}, chatId={}", userId, chatId);
+
         MessageType type = incoming.getMessageType() != null
                 ? incoming.getMessageType()
                 : MessageType.TEXT;
 
         MessageResponse message = messageService.sendMessage(
-                incoming.getChatId(),
+                chatId,
+                userId,
                 incoming.getContent(),
                 type,
                 incoming.getImageId()
         );
 
+        log.info("Message saved: id={}, chatId={}, from={}, to={}",
+                message.id(), chatId, userId, message.receiverId());
+
         WsOutgoingMessage outgoing = WsOutgoingMessage.newMessage(message);
 
-        // Отправляем отправителю
         sendToUser(userId, outgoing);
 
-        // Отправляем получателю (если он в чате)
         String recipientId = message.receiverId();
-        if (sessionManager.isUserInChat(recipientId, incoming.getChatId())) {
+        if (sessionManager.isUserInChat(recipientId, chatId)) {
             sendToUser(recipientId, outgoing);
+            log.debug("Message delivered to recipient {} in real-time", recipientId);
+        } else if (sessionManager.isUserOnline(recipientId)) {
+            sendToUser(recipientId, outgoing);
+            log.debug("Message notification sent to online recipient {}", recipientId);
+        } else {
+            log.debug("Recipient {} is offline, will receive via Kafka notification", recipientId);
         }
-
-        log.debug("Message sent in chat {}: {} -> {}",
-                incoming.getChatId(), userId, recipientId);
     }
 
     private void handleTypingStart(String userId, UUID chatId) {
+        if (chatId == null) {
+            log.warn("TYPING_START received without chatId");
+            return;
+        }
+
         presenceService.startTyping(userId, chatId);
 
         Chat chat = chatService.getChatEntityById(chatId);
@@ -93,6 +110,11 @@ public class WebSocketController {
     }
 
     private void handleTypingStop(String userId, UUID chatId) {
+        if (chatId == null) {
+            log.warn("TYPING_STOP received without chatId");
+            return;
+        }
+
         presenceService.stopTyping(userId, chatId);
 
         Chat chat = chatService.getChatEntityById(chatId);
@@ -104,30 +126,46 @@ public class WebSocketController {
     }
 
     private void handleMarkRead(String userId, UUID chatId) {
-        int count = messageService.markAsRead(chatId);
+        if (chatId == null) {
+            log.warn("MARK_READ received without chatId");
+            return;
+        }
+
+        log.debug("Processing MARK_READ: userId={}, chatId={}", userId, chatId);
+
+        int count = messageService.markAsRead(chatId, userId);
 
         if (count > 0) {
             Chat chat = chatService.getChatEntityById(chatId);
             String senderId = chat.getOtherParticipantId(userId);
 
-            // Уведомляем отправителя, что его сообщения прочитаны
             if (sessionManager.isUserOnline(senderId)) {
                 sendToUser(senderId, WsOutgoingMessage.messagesRead(chatId, userId));
+                log.debug("Sent MESSAGES_READ notification to sender {}", senderId);
             }
         }
     }
 
     private void handleJoinChat(String userId, UUID chatId) {
+        if (chatId == null) {
+            log.warn("JOIN_CHAT received without chatId");
+            return;
+        }
+
         sessionManager.joinChat(userId, chatId);
         presenceService.setActiveChat(userId, chatId);
 
-        // Автоматически помечаем сообщения как прочитанные
-        handleMarkRead(userId, chatId);
-
         log.debug("User {} joined chat {}", userId, chatId);
+
+        handleMarkRead(userId, chatId);
     }
 
     private void handleLeaveChat(String userId, UUID chatId) {
+        if (chatId == null) {
+            log.warn("LEAVE_CHAT received without chatId");
+            return;
+        }
+
         sessionManager.leaveChat(userId, chatId);
         presenceService.removeActiveChat(userId);
         presenceService.stopTyping(userId, chatId);
@@ -137,6 +175,7 @@ public class WebSocketController {
 
     private void handleHeartbeat(String userId) {
         presenceService.updatePresence(userId);
+        log.trace("Heartbeat received from user {}", userId);
     }
 
     private void sendToUser(String userId, WsOutgoingMessage message) {

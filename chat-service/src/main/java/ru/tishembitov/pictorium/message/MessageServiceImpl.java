@@ -33,36 +33,44 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public MessageResponse sendMessage(UUID chatId, String content, MessageType type, String imageId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
+        return sendMessageInternal(chatId, currentUserId, content, type, imageId);
+    }
+
+    @Override
+    public MessageResponse sendMessage(UUID chatId, String senderId, String content, MessageType type, String imageId) {
+        return sendMessageInternal(chatId, senderId, content, type, imageId);
+    }
+
+    private MessageResponse sendMessageInternal(UUID chatId, String senderId, String content, MessageType type, String imageId) {
         Chat chat = chatService.getChatEntityById(chatId);
 
-        validateParticipant(chat, currentUserId);
+        validateParticipant(chat, senderId);
 
-        String receiverId = chat.getOtherParticipantId(currentUserId);
+        String receiverId = chat.getOtherParticipantId(senderId);
 
         Message message = messageMapper.toEntity(
-                chat, currentUserId, receiverId, content, type, imageId
+                chat, senderId, receiverId, content, type, imageId
         );
 
         Message saved = messageRepository.save(message);
-        log.info("Message sent: {} in chat {} from {} to {}",
-                saved.getId(), chatId, currentUserId, receiverId);
+        log.info("Message saved: id={}, chatId={}, from={}, to={}, type={}",
+                saved.getId(), chatId, senderId, receiverId, type);
 
         MessageResponse response = messageMapper.toResponse(saved);
 
-        // Проверяем, находится ли получатель в этом чате
         boolean recipientInChat = presenceService.isUserInChat(receiverId, chatId);
 
         if (!recipientInChat) {
-            // Отправляем событие в Kafka для Notification Service
             eventPublisher.publish(ChatEvent.builder()
                     .type(ChatEventType.NEW_MESSAGE)
                     .chatId(chatId)
                     .messageId(saved.getId())
-                    .senderId(currentUserId)
+                    .senderId(senderId)
                     .receiverId(receiverId)
                     .content(getPreviewContent(content, type))
                     .messageType(type)
                     .build());
+            log.debug("Published NEW_MESSAGE event to Kafka for recipient {}", receiverId);
         }
 
         return response;
@@ -75,8 +83,13 @@ public class MessageServiceImpl implements MessageService {
         Chat chat = chatService.getChatEntityById(chatId);
         validateParticipant(chat, currentUserId);
 
-        return messageRepository.findByChatId(chatId, pageable)
+        Page<MessageResponse> result = messageRepository.findByChatId(chatId, pageable)
                 .map(messageMapper::toResponse);
+
+        log.debug("Retrieved {} messages for chat {} (page {}, size {})",
+                result.getNumberOfElements(), chatId, pageable.getPageNumber(), pageable.getPageSize());
+
+        return result;
     }
 
     @Override
@@ -86,34 +99,42 @@ public class MessageServiceImpl implements MessageService {
         Chat chat = chatService.getChatEntityById(chatId);
         validateParticipant(chat, currentUserId);
 
-        return messageMapper.toResponseList(
-                messageRepository.findAllByChatIdOrdered(chatId)
-        );
+        List<Message> messages = messageRepository.findAllByChatIdOrdered(chatId);
+        log.debug("Retrieved all {} messages for chat {}", messages.size(), chatId);
+
+        return messageMapper.toResponseList(messages);
     }
 
     @Override
     public int markAsRead(UUID chatId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
+        return markAsReadInternal(chatId, currentUserId);
+    }
+
+    @Override
+    public int markAsRead(UUID chatId, String userId) {
+        return markAsReadInternal(chatId, userId);
+    }
+
+    private int markAsReadInternal(UUID chatId, String userId) {
         Chat chat = chatService.getChatEntityById(chatId);
-        validateParticipant(chat, currentUserId);
+        validateParticipant(chat, userId);
 
         int updated = messageRepository.markMessagesAsRead(
-                chatId, currentUserId, MessageState.SENT, MessageState.READ
+                chatId, userId, MessageState.SENT, MessageState.READ
         );
 
         if (updated > 0) {
-            String senderId = chat.getOtherParticipantId(currentUserId);
+            String senderId = chat.getOtherParticipantId(userId);
 
-            // Отправляем событие о прочтении
             eventPublisher.publish(ChatEvent.builder()
                     .type(ChatEventType.MESSAGES_READ)
                     .chatId(chatId)
-                    .senderId(currentUserId)
+                    .senderId(userId)
                     .receiverId(senderId)
                     .build());
 
-            log.info("Marked {} messages as read in chat {} by user {}",
-                    updated, chatId, currentUserId);
+            log.info("Marked {} messages as read in chat {} by user {}", updated, chatId, userId);
         }
 
         return updated;
@@ -123,7 +144,20 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public int getUnreadCount(UUID chatId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
-        return messageRepository.countUnreadMessages(chatId, currentUserId, MessageState.SENT);
+        return getUnreadCountInternal(chatId, currentUserId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getUnreadCount(UUID chatId, String userId) {
+        return getUnreadCountInternal(chatId, userId);
+    }
+
+    private int getUnreadCountInternal(UUID chatId, String userId) {
+        Chat chat = chatService.getChatEntityById(chatId);
+        validateParticipant(chat, userId);
+
+        return messageRepository.countUnreadMessages(chatId, userId, MessageState.SENT);
     }
 
     private void validateParticipant(Chat chat, String userId) {
@@ -136,7 +170,9 @@ public class MessageServiceImpl implements MessageService {
         if (type != MessageType.TEXT) {
             return "📎 " + type.name().toLowerCase();
         }
-        if (content == null) return "";
+        if (content == null || content.isEmpty()) {
+            return "";
+        }
         return content.length() > 100 ? content.substring(0, 100) + "..." : content;
     }
 }
