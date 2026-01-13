@@ -75,15 +75,18 @@ spring:
             - Path=/chat-service/**
 
         # ==================== Notification Service Routes ====================
-        - id: notification-service-route
-          uri: lb://NOTIFICATION-SERVICE
-          predicates:
-            - Path=/api/v1/notifications/**
-
         - id: notification-sse-route
           uri: lb://NOTIFICATION-SERVICE
           predicates:
             - Path=/api/v1/sse/**
+          metadata:
+            response-timeout: -1
+            connect-timeout: 10000
+
+        - id: notification-service-route
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/v1/notifications/**
 
         - id: notification-service-swagger
           uri: lb://NOTIFICATION-SERVICE
@@ -134,6 +137,9 @@ spring:
           predicates:
             - Path=/admin-service/**
 
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
@@ -173,6 +179,8 @@ springdoc:
         url: /storage-service/v3/api-docs
       - name: chat-service
         url: /chat-service/v3/api-docs
+      - name: notification-service
+        url: /notification-service/v3/api-docs
 
 server:
   port: 8222
