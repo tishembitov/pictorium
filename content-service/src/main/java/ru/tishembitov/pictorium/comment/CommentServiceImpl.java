@@ -108,6 +108,7 @@ public class CommentServiceImpl implements CommentService {
                     .commentId(reply.getId())
                     .secondaryRefId(parentComment.getId())
                     .previewText(truncate(request.content()))
+                    .previewImageId(request.imageId())
                     .build());
         }
 
