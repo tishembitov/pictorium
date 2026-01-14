@@ -29,7 +29,6 @@ public class WebSocketEventListener {
             String userId = principal.getName();
             log.info("User connected: {}", userId);
 
-            // Уведомляем других пользователей
             broadcastPresenceChange(userId, true);
         }
     }
@@ -41,7 +40,6 @@ public class WebSocketEventListener {
         sessionManager.getUserId(sessionId).ifPresent(userId -> {
             log.info("User disconnected: {}", userId);
 
-            // Уведомляем других пользователей
             broadcastPresenceChange(userId, false);
         });
     }
@@ -51,13 +49,11 @@ public class WebSocketEventListener {
                 ? WsOutgoingMessage.userOnline(userId)
                 : WsOutgoingMessage.userOffline(userId);
 
-        // Отправляем в общий топик
         messagingTemplate.convertAndSend("/topic/presence", message);
 
-        // Также публикуем в Kafka для Notification Service
         eventPublisher.publish(ChatEvent.builder()
-                .type(online ? ChatEventType.USER_ONLINE : ChatEventType.USER_OFFLINE)
-                .senderId(userId)
+                .type(online ? ChatEventType.USER_ONLINE.name() : ChatEventType.USER_OFFLINE.name())
+                .actorId(userId)
                 .build());
     }
 }

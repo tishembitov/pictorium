@@ -20,7 +20,7 @@ public class ChatEventPublisher {
     private String chatEventsTopic;
 
     public void publish(ChatEvent event) {
-        String key = event.getReceiverId(); // Partition by receiver for ordering
+        String key = event.getRecipientId();
 
         CompletableFuture<SendResult<String, ChatEvent>> future =
                 kafkaTemplate.send(chatEventsTopic, key, event);
@@ -31,7 +31,7 @@ public class ChatEventPublisher {
             } else {
                 log.debug("Chat event published: type={}, receiver={}, partition={}",
                         event.getType(),
-                        event.getReceiverId(),
+                        event.getRecipientId(),
                         result.getRecordMetadata().partition());
             }
         });

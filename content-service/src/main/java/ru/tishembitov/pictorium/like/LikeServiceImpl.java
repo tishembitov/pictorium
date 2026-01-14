@@ -136,6 +136,7 @@ public class LikeServiceImpl implements LikeService {
                     .pinId(comment.getPin().getId())
                     .commentId(commentId)
                     .previewText(truncate(comment.getContent(), 100))
+                    .previewImageId(comment.getImageId())
                     .build());
         }
 

@@ -191,7 +191,6 @@ public class NotificationServiceImpl implements NotificationService {
             case "COMMENT_LIKED" -> NotificationType.COMMENT_LIKED;
             case "COMMENT_REPLIED" -> NotificationType.COMMENT_REPLIED;
             case "USER_FOLLOWED" -> NotificationType.USER_FOLLOWED;
-            case "USER_MENTIONED" -> NotificationType.USER_MENTIONED;
             default -> throw new IllegalArgumentException("Unknown event type: " + event.getType());
         };
     }

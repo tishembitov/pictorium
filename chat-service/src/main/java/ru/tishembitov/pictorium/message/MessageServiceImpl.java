@@ -62,13 +62,14 @@ public class MessageServiceImpl implements MessageService {
 
         if (!recipientInChat) {
             eventPublisher.publish(ChatEvent.builder()
-                    .type(ChatEventType.NEW_MESSAGE)
+                    .type(ChatEventType.NEW_MESSAGE.name())
                     .chatId(chatId)
                     .messageId(saved.getId())
-                    .senderId(senderId)
-                    .receiverId(receiverId)
-                    .content(getPreviewContent(content, type))
-                    .messageType(type)
+                    .actorId(senderId)
+                    .recipientId(receiverId)
+                    .previewText(getPreviewContent(content, type))
+                    .previewImageId(type == MessageType.IMAGE ? imageId : null)
+                    .messageType(type.name())
                     .build());
             log.debug("Published NEW_MESSAGE event to Kafka for recipient {}", receiverId);
         }
@@ -125,13 +126,13 @@ public class MessageServiceImpl implements MessageService {
         );
 
         if (updated > 0) {
-            String senderId = chat.getOtherParticipantId(userId);
+            String otherUserId = chat.getOtherParticipantId(userId);
 
             eventPublisher.publish(ChatEvent.builder()
-                    .type(ChatEventType.MESSAGES_READ)
+                    .type(ChatEventType.MESSAGES_READ.name())
                     .chatId(chatId)
-                    .senderId(userId)
-                    .receiverId(senderId)
+                    .actorId(userId)
+                    .recipientId(otherUserId)
                     .build());
 
             log.info("Marked {} messages as read in chat {} by user {}", updated, chatId, userId);

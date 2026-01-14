@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.tishembitov.pictorium.message.MessageType;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -15,13 +13,15 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ChatEvent {
 
-    private ChatEventType type;
+    private String type;
+    private String actorId;
+    private String recipientId;
+    private String previewText;
+    private String previewImageId;
+
     private UUID chatId;
     private UUID messageId;
-    private String senderId;
-    private String receiverId;
-    private String content;
-    private MessageType messageType;
+    private String messageType;
 
     @Builder.Default
     private Instant timestamp = Instant.now();

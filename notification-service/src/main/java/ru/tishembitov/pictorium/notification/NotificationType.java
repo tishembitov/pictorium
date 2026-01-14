@@ -12,6 +12,5 @@ public enum NotificationType {
     COMMENT_REPLIED,
 
     // User notifications
-    USER_FOLLOWED,
-    USER_MENTIONED
+    USER_FOLLOWED
 }

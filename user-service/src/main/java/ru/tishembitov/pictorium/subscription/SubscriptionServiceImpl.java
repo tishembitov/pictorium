@@ -54,7 +54,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .actorId(id)
                 .recipientId(userIdToFollow)
                 .previewText(currentUser.getUsername())
-                .previewImageId(currentUser.getImageId())
+//                .previewImageId(currentUser.getImageId())
                 .build());
 
         log.info("User {} followed user {}", id, userIdToFollow);
