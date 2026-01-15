@@ -27,6 +27,13 @@ public class SseEvent {
                 .build();
     }
 
+    public static SseEvent notificationUpdated(NotificationResponse notification) {
+        return SseEvent.builder()
+                .type("notification_updated")
+                .data(notification)
+                .build();
+    }
+
     public static SseEvent unreadUpdate(long count) {
         return SseEvent.builder()
                 .type("unread_update")

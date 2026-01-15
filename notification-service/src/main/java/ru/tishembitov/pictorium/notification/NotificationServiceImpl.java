@@ -18,8 +18,7 @@ import ru.tishembitov.pictorium.util.SecurityUtils;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +28,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final NotificationAggregationStrategy aggregationStrategy;
     private final SseEmitterManager sseEmitterManager;
     private final UnreadCounterService unreadCounterService;
 
@@ -39,24 +39,64 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        if (isDuplicate(event)) {
-            log.debug("Duplicate notification detected, skipping: {}", event);
-            return;
+        NotificationType type = mapEventType(event);
+
+        Optional<Notification> existingOpt = aggregationStrategy.findForAggregation(event, type);
+
+        Notification notification;
+        boolean isNewNotification;
+
+        if (existingOpt.isPresent()) {
+            Notification existing = existingOpt.get();
+
+            if (existing.containsActor(event.getActorId()) && isSingleActionType(type)) {
+                log.debug("Duplicate {} from {} for {}, skipping",
+                        type, event.getActorId(), event.getRecipientId());
+                return;
+            }
+
+            if (aggregationStrategy.shouldAggregate(existing, event, type)) {
+                notification = existing;
+                notification.aggregate(
+                        event.getActorId(),
+                        event.getPreviewText(),
+                        event.getPreviewImageId(),
+                        aggregationStrategy.getSecondaryRefId(event, type)
+                );
+
+                isNewNotification = false;
+
+                log.info("Notification aggregated: id={}, type={}, count={}, uniqueActors={}",
+                        notification.getId(), type,
+                        notification.getAggregatedCount(),
+                        notification.getUniqueActorCount());
+            } else {
+                log.debug("Cannot aggregate {} from {}, already in notification",
+                        type, event.getActorId());
+                return;
+            }
+        } else {
+            notification = buildNotification(event, type);
+            isNewNotification = true;
         }
 
-        Notification notification = buildNotification(event);
         Notification saved = notificationRepository.save(notification);
 
-        unreadCounterService.increment(event.getRecipientId());
+        if (isNewNotification) {
+            unreadCounterService.increment(event.getRecipientId());
+        }
 
         NotificationResponse response = notificationMapper.toResponse(saved);
         sseEmitterManager.sendToUser(
                 event.getRecipientId(),
-                SseEvent.notification(response)
+                isNewNotification
+                        ? SseEvent.notification(response)
+                        : SseEvent.notificationUpdated(response)
         );
 
-        log.info("Notification created and sent: type={}, recipient={}, actor={}",
-                event.getType(), event.getRecipientId(), event.getActorId());
+        log.info("Notification {}: type={}, recipient={}, actor={}",
+                isNewNotification ? "created" : "updated",
+                type, event.getRecipientId(), event.getActorId());
     }
 
     @Override
@@ -64,7 +104,7 @@ public class NotificationServiceImpl implements NotificationService {
     public Page<NotificationResponse> getMyNotifications(Pageable pageable) {
         String userId = SecurityUtils.requireCurrentUserId();
         return notificationRepository
-                .findByRecipientIdOrderByCreatedAtDesc(userId, pageable)
+                .findByRecipientIdOrderByUpdatedAtDesc(userId, pageable)
                 .map(notificationMapper::toResponse);
     }
 
@@ -73,7 +113,7 @@ public class NotificationServiceImpl implements NotificationService {
     public Page<NotificationResponse> getMyUnreadNotifications(Pageable pageable) {
         String userId = SecurityUtils.requireCurrentUserId();
         return notificationRepository
-                .findByRecipientIdAndStatusOrderByCreatedAtDesc(
+                .findByRecipientIdAndStatusOrderByUpdatedAtDesc(
                         userId, NotificationStatus.UNREAD, pageable)
                 .map(notificationMapper::toResponse);
     }
@@ -92,7 +132,6 @@ public class NotificationServiceImpl implements NotificationService {
                 userId, NotificationStatus.UNREAD);
 
         unreadCounterService.setCount(userId, count);
-
         return count;
     }
 
@@ -109,8 +148,6 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (updated > 0) {
             unreadCounterService.reset(userId);
-
-            // Уведомляем клиента об обновлении счетчика
             sseEmitterManager.sendToUser(userId, SseEvent.unreadUpdate(0));
         }
 
@@ -128,7 +165,6 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (updated > 0) {
             unreadCounterService.decrement(userId, updated);
-
             long newCount = getUnreadCount();
             sseEmitterManager.sendToUser(userId, SseEvent.unreadUpdate(newCount));
         }
@@ -157,26 +193,53 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("Notification {} deleted by user {}", id, userId);
     }
 
-    @Scheduled(cron = "0 0 3 * * *") // 3:00 AM every day
+    @Scheduled(cron = "0 0 3 * * *")
     public void cleanupOldNotifications() {
         Instant threshold = Instant.now().minus(30, ChronoUnit.DAYS);
         int deleted = notificationRepository.deleteOlderThan(threshold);
         log.info("Cleaned up {} old notifications", deleted);
     }
 
-    private Notification buildNotification(BaseEvent event) {
+    private boolean isSingleActionType(NotificationType type) {
+        return type == NotificationType.PIN_LIKED ||
+                type == NotificationType.PIN_SAVED ||
+                type == NotificationType.COMMENT_LIKED ||
+                type == NotificationType.USER_FOLLOWED;
+    }
+
+    private Notification buildNotification(BaseEvent event, NotificationType type) {
+        Set<String> initialActors = new HashSet<>();
+        initialActors.add(event.getActorId());
+
         Notification.NotificationBuilder builder = Notification.builder()
                 .recipientId(event.getRecipientId())
                 .actorId(event.getActorId())
-                .type(mapEventType(event))
-                .referenceId(event.getReferenceId())
+                .type(type)
                 .previewText(event.getPreviewText())
-                .previewImageId(event.getPreviewImageId());
+                .previewImageId(event.getPreviewImageId())
+                .aggregatedCount(1)
+                .uniqueActorCount(1)
+                .allActorIds(initialActors);
 
         if (event instanceof ChatEvent chatEvent) {
+            builder.referenceId(chatEvent.getChatId());
             builder.secondaryRefId(chatEvent.getMessageId());
         } else if (event instanceof ContentEvent contentEvent) {
-            builder.secondaryRefId(contentEvent.getSecondaryRefId());
+            switch (type) {
+                case PIN_LIKED, PIN_SAVED, PIN_COMMENTED -> {
+                    builder.referenceId(contentEvent.getPinId());
+                    builder.secondaryRefId(contentEvent.getCommentId());
+                }
+                case COMMENT_LIKED -> {
+                    builder.referenceId(contentEvent.getCommentId());
+                    builder.secondaryRefId(contentEvent.getPinId());
+                }
+                case COMMENT_REPLIED -> {
+                    builder.referenceId(contentEvent.getPinId());
+                    builder.secondaryRefId(contentEvent.getSecondaryRefId());
+                }
+                default -> builder.referenceId(contentEvent.getReferenceId());
+            }
         }
 
         return builder.build();
@@ -193,18 +256,5 @@ public class NotificationServiceImpl implements NotificationService {
             case "USER_FOLLOWED" -> NotificationType.USER_FOLLOWED;
             default -> throw new IllegalArgumentException("Unknown event type: " + event.getType());
         };
-    }
-
-    private boolean isDuplicate(BaseEvent event) {
-        if (event.getReferenceId() == null) {
-            return false;
-        }
-
-        return notificationRepository.existsByRecipientIdAndActorIdAndTypeAndReferenceId(
-                event.getRecipientId(),
-                event.getActorId(),
-                mapEventType(event),
-                event.getReferenceId()
-        );
     }
 }
