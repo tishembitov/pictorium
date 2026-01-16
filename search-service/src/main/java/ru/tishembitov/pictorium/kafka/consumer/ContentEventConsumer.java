@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import ru.tishembitov.pictorium.board.BoardIndexService;
+import ru.tishembitov.pictorium.kafka.event.BoardEvent;
 import ru.tishembitov.pictorium.pin.PinIndexService;
 import ru.tishembitov.pictorium.kafka.event.ContentEvent;
 
@@ -47,8 +48,8 @@ public class ContentEventConsumer {
         }
     }
 
-    private ru.tishembitov.pictorium.kafka.event.BoardEvent mapToBoardEvent(ContentEvent event) {
-        return ru.tishembitov.pictorium.kafka.event.BoardEvent.builder()
+    private BoardEvent mapToBoardEvent(ContentEvent event) {
+        return BoardEvent.builder()
                 .type(event.getType())
                 .actorId(event.getActorId())
                 .actorUsername(event.getActorUsername())
