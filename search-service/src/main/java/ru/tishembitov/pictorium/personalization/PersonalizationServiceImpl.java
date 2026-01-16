@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import ru.tishembitov.pictorium.document.UserInterestDocument;
-import ru.tishembitov.pictorium.repository.UserInterestRepository;
 
 import java.time.Instant;
 import java.util.*;

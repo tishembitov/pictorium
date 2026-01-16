@@ -57,7 +57,7 @@ public class PresenceService {
     }
 
     public boolean isUserOnline(String userId) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(PRESENCE_KEY_PREFIX + userId));
+        return redisTemplate.hasKey(PRESENCE_KEY_PREFIX + userId);
     }
 
     public Optional<Instant> getLastSeen(String userId) {

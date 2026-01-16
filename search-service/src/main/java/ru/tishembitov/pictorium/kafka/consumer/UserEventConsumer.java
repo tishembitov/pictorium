@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import ru.tishembitov.pictorium.index.UserIndexService;
+import ru.tishembitov.pictorium.user.UserIndexService;
 import ru.tishembitov.pictorium.kafka.event.UserEvent;
 
 @Component

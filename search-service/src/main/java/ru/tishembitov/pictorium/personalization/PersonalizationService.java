@@ -1,7 +1,5 @@
 package ru.tishembitov.pictorium.personalization;
 
-import ru.tishembitov.pictorium.document.UserInterestDocument;
-
 import java.util.Optional;
 import java.util.Set;
 
