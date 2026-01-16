@@ -57,6 +57,9 @@ public class BoardServiceImpl implements BoardService {
         Board savedBoard = boardRepository.save(board);
 
         log.info("Board created: id={}, userId={}", savedBoard.getId(), currentUserId);
+
+        publishBoardEvent(savedBoard, ContentEventType.BOARD_CREATED, null);
+
         return boardMapper.toResponse(savedBoard);
     }
 
@@ -118,6 +121,9 @@ public class BoardServiceImpl implements BoardService {
         Board updatedBoard = boardRepository.save(board);
 
         log.info("Board updated: id={}, userId={}", boardId, currentUserId);
+
+        publishBoardEvent(updatedBoard, ContentEventType.BOARD_UPDATED, null);
+
         return boardMapper.toResponse(updatedBoard);
     }
 
@@ -156,14 +162,7 @@ public class BoardServiceImpl implements BoardService {
         log.info("Pin saved to board: boardId={}, pinId={}, userId={}", boardId, pinId, currentUserId);
 
         if (!wasAlreadySaved && !pin.getAuthorId().equals(currentUserId)) {
-            eventPublisher.publish(ContentEvent.builder()
-                    .type(ContentEventType.PIN_SAVED.name())
-                    .actorId(currentUserId)
-                    .recipientId(pin.getAuthorId())
-                    .pinId(pinId)
-                    .previewText(pin.getTitle())
-                    .previewImageId(pin.getThumbnailId())
-                    .build());
+            publishBoardEvent(board, ContentEventType.BOARD_PIN_ADDED, pin.getThumbnailId());
         }
 
         return pinMapper.toResponse(pin, pinService.getPinInteractionDto(pinId));
@@ -221,9 +220,8 @@ public class BoardServiceImpl implements BoardService {
     public void removePinFromBoard(UUID boardId, UUID pinId) {
         String currentUserId = SecurityUtils.requireCurrentUserId();
 
-        if (boardRepository.findByIdAndUserId(boardId, currentUserId).isEmpty()) {
-            throw new ResourceNotFoundException("Board not found or access denied");
-        }
+        Board board = boardRepository.findByIdAndUserId(boardId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Board not found or access denied"));
 
         BoardPin boardPin = boardPinRepository.findByBoardIdAndPinId(boardId, pinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pin not found in board"));
@@ -234,6 +232,8 @@ public class BoardServiceImpl implements BoardService {
         if (!stillSaved) {
             pinRepository.decrementSaveCount(pinId);
         }
+
+        publishBoardEvent(board, ContentEventType.BOARD_PIN_REMOVED, null);
 
         log.info("Pin removed from board: boardId={}, pinId={}, userId={}",
                 boardId, pinId, currentUserId);
@@ -295,6 +295,12 @@ public class BoardServiceImpl implements BoardService {
                         sb.getSelectedBoard().getId().equals(boardId))
                 .ifPresent(selectedBoardRepository::delete);
 
+        eventPublisher.publish(ContentEvent.builder()
+                .type(ContentEventType.BOARD_DELETED.name())
+                .actorId(currentUserId)
+                .boardId(boardId)
+                .build());
+
         boardRepository.delete(board);
 
         log.info("Board deleted: id={}, userId={}", boardId, currentUserId);
@@ -338,6 +344,28 @@ public class BoardServiceImpl implements BoardService {
         if (!board.getUserId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to modify this board");
         }
+    }
+
+    private void publishBoardEvent(Board board, ContentEventType eventType, String previewImageId) {
+        int pinCount = board.getBoardPins() != null ? board.getBoardPins().size() : 0;
+
+        String preview = previewImageId;
+        if (preview == null && board.getBoardPins() != null && !board.getBoardPins().isEmpty()) {
+            preview = board.getBoardPins().stream()
+                    .findFirst()
+                    .map(bp -> bp.getPin().getThumbnailId())
+                    .orElse(null);
+        }
+
+        eventPublisher.publish(ContentEvent.builder()
+                .type(eventType.name())
+                .actorId(board.getUserId())
+                // .actorUsername() - нужно получить
+                .boardId(board.getId())
+                .boardTitle(board.getTitle())
+                .boardPinCount(pinCount)
+                .previewImageId(preview)
+                .build());
     }
 
     private void updateSelectedBoard(String userId, Board board) {

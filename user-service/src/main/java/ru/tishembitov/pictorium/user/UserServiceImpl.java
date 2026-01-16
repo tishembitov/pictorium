@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.exception.UsernameAlreadyExistsException;
 import ru.tishembitov.pictorium.exception.UserNotFoundException;
+import ru.tishembitov.pictorium.kafka.UserEvent;
+import ru.tishembitov.pictorium.kafka.UserEventPublisher;
+import ru.tishembitov.pictorium.kafka.UserEventType;
 
 import java.util.function.Consumer;
 
@@ -18,6 +21,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final ImageService imageService;
+    private final UserEventPublisher eventPublisher;
 
     @Override
     public UserResponse getUserById(String userId) {
@@ -30,7 +34,6 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
         return userMapper.toResponse(user);
     }
-
     @Override
     @Transactional
     public UserResponse updateUser(String id, UserUpdateRequest request) {
@@ -47,7 +50,19 @@ public class UserServiceImpl implements UserService {
 
         userMapper.updateFromRequest(request, user);
 
-        return userMapper.toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        eventPublisher.publish(UserEvent.builder()
+                .type(UserEventType.USER_UPDATED.name())
+                .userId(saved.getId())
+                .username(saved.getUsername())
+                .email(saved.getEmail())
+                .description(saved.getDescription())
+                .imageId(saved.getImageId())
+                .bannerImageId(saved.getBannerImageId())
+                .build());
+
+        return userMapper.toResponse(saved);
     }
 
     private void handleImageUpdate(String newId, String currentId, Consumer<String> setter) {

@@ -64,6 +64,7 @@ public class LikeServiceImpl implements LikeService {
                     .actorId(userId)
                     .recipientId(pin.getAuthorId())
                     .pinId(pinId)
+                    .likeCount(pin.getLikeCount())
                     .previewText(pin.getTitle())
                     .previewImageId(pin.getThumbnailId())
                     .build());

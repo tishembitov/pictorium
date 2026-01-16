@@ -13,6 +13,9 @@ import ru.tishembitov.pictorium.board.PinSaveInfoProjection;
 import ru.tishembitov.pictorium.client.ImageService;
 import ru.tishembitov.pictorium.comment.CommentRepository;
 import ru.tishembitov.pictorium.exception.ResourceNotFoundException;
+import ru.tishembitov.pictorium.kafka.ContentEvent;
+import ru.tishembitov.pictorium.kafka.ContentEventPublisher;
+import ru.tishembitov.pictorium.kafka.ContentEventType;
 import ru.tishembitov.pictorium.like.LikeRepository;
 import ru.tishembitov.pictorium.tag.Tag;
 import ru.tishembitov.pictorium.tag.TagService;
@@ -35,6 +38,7 @@ public class PinServiceImpl implements PinService {
     private final PinMapper pinMapper;
     private final TagService tagService;
     private final ImageService imageService;
+    private final ContentEventPublisher eventPublisher;
 
     @Override
     public PinResponse getPinById(UUID pinId) {
@@ -90,8 +94,11 @@ public class PinServiceImpl implements PinService {
 
         log.info("Pin created: {} by user: {}", saved.getId(), currentUserId);
 
+        publishPinEvent(saved, ContentEventType.PIN_CREATED);
+
         return pinMapper.toResponse(saved, PinInteractionDto.empty());
     }
+
 
     @Override
     @Transactional
@@ -123,6 +130,8 @@ public class PinServiceImpl implements PinService {
 
         log.info("Pin updated: {}", pinId);
 
+        publishPinEvent(updated, ContentEventType.PIN_UPDATED);
+
         return pinMapper.toResponse(updated, interaction);
     }
 
@@ -143,6 +152,12 @@ public class PinServiceImpl implements PinService {
         imageService.deleteImageSafely(pin.getVideoPreviewId());
 
         commentImageIds.forEach(imageService::deleteImageSafely);
+
+        eventPublisher.publish(ContentEvent.builder()
+                .type(ContentEventType.PIN_DELETED.name())
+                .actorId(currentUserId)
+                .pinId(pinId)
+                .build());
 
         pinRepository.delete(pin);
 
@@ -226,6 +241,29 @@ public class PinServiceImpl implements PinService {
             imageService.deleteImageSafely(currentId);
             setter.accept(newId);
         }
+    }
+
+    private void publishPinEvent(Pin pin, ContentEventType eventType) {
+        Set<String> tagNames = pin.getTags().stream()
+                .map(Tag::getName)
+                .collect(Collectors.toSet());
+
+        eventPublisher.publish(ContentEvent.builder()
+                .type(eventType.name())
+                .actorId(pin.getAuthorId())
+                .pinId(pin.getId())
+                .pinTitle(pin.getTitle())
+                .pinDescription(pin.getDescription())
+                .pinTags(tagNames)
+                .imageId(pin.getImageId())
+                .thumbnailId(pin.getThumbnailId())
+                .originalWidth(pin.getOriginalWidth())
+                .originalHeight(pin.getOriginalHeight())
+                .likeCount(pin.getLikeCount())
+                .saveCount(pin.getSaveCount())
+                .commentCount(pin.getCommentCount())
+                .viewCount(pin.getViewCount())
+                .build());
     }
 
     private PinFilter normalizeScope(PinFilter filter) {
