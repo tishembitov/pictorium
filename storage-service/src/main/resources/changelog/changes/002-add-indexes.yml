@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-add-indexes
+      author: pictorium
+      changes:
+        - createIndex:
+            tableName: image
+            indexName: idx_image_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: image
+            indexName: idx_image_category_status
+            columns:
+              - column:
+                  name: category
+              - column:
+                  name: status
+        - createIndex:
+            tableName: image
+            indexName: idx_image_created_at
+            columns:
+              - column:
+                  name: created_at

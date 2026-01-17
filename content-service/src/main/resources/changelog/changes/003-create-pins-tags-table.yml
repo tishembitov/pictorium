@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-pins-tags-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: pins_tags
+            columns:
+              - column:
+                  name: pin_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            tableName: pins_tags
+            columnNames: pin_id, tag_id
+            constraintName: pk_pins_tags
+
+        # CASCADE DELETE при удалении пина
+        - addForeignKeyConstraint:
+            baseTableName: pins_tags
+            baseColumnNames: pin_id
+            referencedTableName: pins
+            referencedColumnNames: id
+            constraintName: fk_pins_tags_pin
+            onDelete: CASCADE
+
+        # RESTRICT при удалении тега (теги не должны удаляться если используются)
+        - addForeignKeyConstraint:
+            baseTableName: pins_tags
+            baseColumnNames: tag_id
+            referencedTableName: tags
+            referencedColumnNames: id
+            constraintName: fk_pins_tags_tag
+            onDelete: CASCADE

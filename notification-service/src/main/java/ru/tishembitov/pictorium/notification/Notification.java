@@ -98,22 +98,17 @@ public class Notification {
 
     public void aggregate(String newActorId, String newPreviewText,
                           String newPreviewImageId, UUID newSecondaryRefId) {
-
         boolean isNewActor = addActor(newActorId);
-
         this.aggregatedCount++;
-
         if (isNewActor) {
             this.uniqueActorCount++;
         }
-
         if (newPreviewText != null) {
             this.previewText = newPreviewText;
         }
         if (newPreviewImageId != null) {
             this.previewImageId = newPreviewImageId;
         }
-
         if (this.type == NotificationType.NEW_MESSAGE && newSecondaryRefId != null) {
             this.secondaryRefId = newSecondaryRefId;
         }
@@ -123,28 +118,22 @@ public class Notification {
         if (newActorId == null) {
             return false;
         }
-
         if (isSingleActionType()) {
             if (allActorIds.contains(newActorId)) {
-                return false; // Уже был
+                return false;
             }
             allActorIds.add(newActorId);
         }
-
         if (newActorId.equals(this.actorId)) {
             return false;
         }
-
         boolean isNewActor = !recentActorIds.contains(newActorId);
-
         recentActorIds.remove(newActorId);
         recentActorIds.addFirst(this.actorId);
         this.actorId = newActorId;
-
         if (recentActorIds.size() > 3) {
             recentActorIds = new ArrayList<>(recentActorIds.subList(0, 3));
         }
-
         return isNewActor || isSingleActionType();
     }
 
@@ -152,11 +141,9 @@ public class Notification {
         if (isRepeatableActionType(type)) {
             return true;
         }
-
         if (allActorIds.contains(newActorId)) {
             return false;
         }
-
         return !this.actorId.equals(newActorId);
     }
 

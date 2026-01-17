@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-notifications-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: notifications
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: recipient_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: 'UNREAD'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aggregated_count
+                  type: integer
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unique_actor_count
+                  type: integer
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_id
+                  type: uuid
+              - column:
+                  name: secondary_ref_id
+                  type: uuid
+              - column:
+                  name: preview_text
+                  type: varchar(200)
+              - column:
+                  name: preview_image_id
+                  type: varchar(200)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: read_at
+                  type: timestamp with time zone

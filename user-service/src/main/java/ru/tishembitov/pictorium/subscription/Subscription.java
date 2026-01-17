@@ -35,5 +35,4 @@ public class Subscription {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
-
 }

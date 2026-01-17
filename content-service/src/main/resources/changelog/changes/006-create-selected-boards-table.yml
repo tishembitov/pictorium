@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-selected-boards-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: selected_boards
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: board_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+
+        # SET NULL при удалении доски (пользователь не теряет запись, просто сбрасывается выбор)
+        - addForeignKeyConstraint:
+            baseTableName: selected_boards
+            baseColumnNames: board_id
+            referencedTableName: boards
+            referencedColumnNames: id
+            constraintName: fk_selected_boards_board
+            onDelete: SET NULL

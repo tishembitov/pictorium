@@ -1,0 +1,93 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-indexes
+      author: pictorium
+      changes:
+        # Pins indexes
+        - createIndex:
+            tableName: pins
+            indexName: idx_pins_author_created
+            columns:
+              - column:
+                  name: author_id
+              - column:
+                  name: created_at
+                  descending: true
+        - createIndex:
+            tableName: pins
+            indexName: idx_pins_created
+            columns:
+              - column:
+                  name: created_at
+                  descending: true
+
+        # Board pins indexes
+        - createIndex:
+            tableName: board_pins
+            indexName: idx_board_pins_board
+            columns:
+              - column:
+                  name: board_id
+        - createIndex:
+            tableName: board_pins
+            indexName: idx_board_pins_pin
+            columns:
+              - column:
+                  name: pin_id
+        - createIndex:
+            tableName: board_pins
+            indexName: idx_board_pins_added
+            columns:
+              - column:
+                  name: board_id
+              - column:
+                  name: added_at
+                  descending: true
+
+        # Comments indexes
+        - createIndex:
+            tableName: comments
+            indexName: idx_comments_pin
+            columns:
+              - column:
+                  name: pin_id
+        - createIndex:
+            tableName: comments
+            indexName: idx_comments_parent
+            columns:
+              - column:
+                  name: comment_id
+        - createIndex:
+            tableName: comments
+            indexName: idx_comments_user
+            columns:
+              - column:
+                  name: user_id
+
+        # Likes indexes
+        - createIndex:
+            tableName: likes
+            indexName: idx_likes_pin
+            columns:
+              - column:
+                  name: pin_id
+        - createIndex:
+            tableName: likes
+            indexName: idx_likes_comment
+            columns:
+              - column:
+                  name: comment_id
+        - createIndex:
+            tableName: likes
+            indexName: idx_likes_user
+            columns:
+              - column:
+                  name: user_id
+
+        # Boards indexes
+        - createIndex:
+            tableName: boards
+            indexName: idx_boards_user
+            columns:
+              - column:
+                  name: user_id

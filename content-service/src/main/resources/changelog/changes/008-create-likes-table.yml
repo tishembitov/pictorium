@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-create-likes-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: likes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pin_id
+                  type: uuid
+              - column:
+                  name: comment_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+
+        # Уникальные ограничения для предотвращения дублирования лайков
+        - addUniqueConstraint:
+            tableName: likes
+            columnNames: user_id, pin_id
+            constraintName: uk_likes_user_pin
+
+        - addUniqueConstraint:
+            tableName: likes
+            columnNames: user_id, comment_id
+            constraintName: uk_likes_user_comment
+
+        # CASCADE DELETE при удалении пина
+        - addForeignKeyConstraint:
+            baseTableName: likes
+            baseColumnNames: pin_id
+            referencedTableName: pins
+            referencedColumnNames: id
+            constraintName: fk_likes_pin
+            onDelete: CASCADE
+
+        # CASCADE DELETE при удалении комментария
+        - addForeignKeyConstraint:
+            baseTableName: likes
+            baseColumnNames: comment_id
+            referencedTableName: comments
+            referencedColumnNames: id
+            constraintName: fk_likes_comment
+            onDelete: CASCADE

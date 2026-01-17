@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-board-pins-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: board_pins
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: board_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pin_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: added_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: board_pins
+            columnNames: board_id, pin_id
+            constraintName: uk_board_pin
+
+        # CASCADE DELETE при удалении доски
+        - addForeignKeyConstraint:
+            baseTableName: board_pins
+            baseColumnNames: board_id
+            referencedTableName: boards
+            referencedColumnNames: id
+            constraintName: fk_board_pins_board
+            onDelete: CASCADE
+
+        # CASCADE DELETE при удалении пина
+        - addForeignKeyConstraint:
+            baseTableName: board_pins
+            baseColumnNames: pin_id
+            referencedTableName: pins
+            referencedColumnNames: id
+            constraintName: fk_board_pins_pin
+            onDelete: CASCADE

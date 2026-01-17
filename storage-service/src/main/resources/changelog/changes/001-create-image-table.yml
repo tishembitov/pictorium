@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-image-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: image
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: object_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bucket_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: file_name
+                  type: varchar(255)
+              - column:
+                  name: content_type
+                  type: varchar(100)
+              - column:
+                  name: file_size
+                  type: bigint
+              - column:
+                  name: category
+                  type: varchar(100)
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: thumbnail_image_id
+                  type: varchar(36)
+              - column:
+                  name: width
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: height
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+              - column:
+                  name: confirmed_at
+                  type: timestamp with time zone

@@ -41,6 +41,7 @@ dependencies {
     implementation 'net.coobird:thumbnailator:0.4.21'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.liquibase:liquibase-core:5.0.1'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'

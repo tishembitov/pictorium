@@ -47,7 +47,7 @@ public class Comment {
     private String content;
 
     @Column(length = 100)
-    private String imageId;  // ID в storage-service
+    private String imageId;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

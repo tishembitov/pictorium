@@ -1,5 +1,3 @@
-# config-server/src/main/resources/configurations/storage-service.yml
-
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/storage_db}
@@ -13,6 +11,10 @@ spring:
     show-sql: false
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yml
+    enabled: true
 
   servlet:
     multipart:

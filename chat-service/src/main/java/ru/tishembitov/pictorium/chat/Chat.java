@@ -49,7 +49,6 @@ public class Chat {
     @Column(nullable = false)
     private Instant updatedAt;
 
-
     public boolean isParticipant(String userId) {
         return senderId.equals(userId) || recipientId.equals(userId);
     }

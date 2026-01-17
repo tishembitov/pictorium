@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/001-create-chats-table.yml
+  - include:
+      file: db/changelog/changes/002-create-messages-table.yml
+  - include:
+      file: db/changelog/changes/003-add-indexes.yml

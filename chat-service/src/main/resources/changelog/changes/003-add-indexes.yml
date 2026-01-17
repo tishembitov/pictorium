@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-indexes
+      author: pictorium
+      changes:
+        # Chats indexes
+        - createIndex:
+            tableName: chats
+            indexName: idx_chat_participants
+            columns:
+              - column:
+                  name: sender_id
+              - column:
+                  name: recipient_id
+        - createIndex:
+            tableName: chats
+            indexName: idx_chat_sender
+            columns:
+              - column:
+                  name: sender_id
+        - createIndex:
+            tableName: chats
+            indexName: idx_chat_recipient
+            columns:
+              - column:
+                  name: recipient_id
+
+        # Messages indexes
+        - createIndex:
+            tableName: messages
+            indexName: idx_message_chat
+            columns:
+              - column:
+                  name: chat_id
+        - createIndex:
+            tableName: messages
+            indexName: idx_message_chat_created
+            columns:
+              - column:
+                  name: chat_id
+              - column:
+                  name: created_at
+                  descending: true
+        - createIndex:
+            tableName: messages
+            indexName: idx_message_receiver_state
+            columns:
+              - column:
+                  name: receiver_id
+              - column:
+                  name: state

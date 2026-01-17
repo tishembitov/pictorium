@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-subscriptions-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: subscriptions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: follower_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: following_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+
+        # Уникальное ограничение на пару follower-following
+        - addUniqueConstraint:
+            tableName: subscriptions
+            columnNames: follower_id, following_id
+            constraintName: uk_subscription_follower_following
+
+        # Foreign key с CASCADE DELETE для follower
+        - addForeignKeyConstraint:
+            baseTableName: subscriptions
+            baseColumnNames: follower_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_subscription_follower
+            onDelete: CASCADE
+            onUpdate: CASCADE
+
+        # Foreign key с CASCADE DELETE для following
+        - addForeignKeyConstraint:
+            baseTableName: subscriptions
+            baseColumnNames: following_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_subscription_following
+            onDelete: CASCADE
+            onUpdate: CASCADE

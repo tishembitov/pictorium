@@ -50,9 +50,6 @@ public class Message {
     @Builder.Default
     private MessageState state = MessageState.SENT;
 
-    /**
-     * ID изображения в Storage Service
-     */
     @Column(length = 100)
     private String imageId;
 

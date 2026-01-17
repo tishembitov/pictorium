@@ -1,0 +1,94 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-pins-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: pins
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: author_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(200)
+              - column:
+                  name: description
+                  type: varchar(400)
+              - column:
+                  name: href
+                  type: varchar(200)
+              - column:
+                  name: image_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: thumbnail_id
+                  type: varchar(100)
+              - column:
+                  name: video_preview_id
+                  type: varchar(100)
+              - column:
+                  name: original_width
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_height
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: thumbnail_width
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: thumbnail_height
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: like_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: save_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: view_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false

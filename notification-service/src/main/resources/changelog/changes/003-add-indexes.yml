@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-indexes
+      author: pictorium
+      changes:
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notification_recipient
+            columns:
+              - column:
+                  name: recipient_id
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notification_recipient_status
+            columns:
+              - column:
+                  name: recipient_id
+              - column:
+                  name: status
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notification_recipient_updated
+            columns:
+              - column:
+                  name: recipient_id
+              - column:
+                  name: updated_at
+                  descending: true
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notification_aggregation
+            columns:
+              - column:
+                  name: recipient_id
+              - column:
+                  name: type
+              - column:
+                  name: reference_id
+              - column:
+                  name: status
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notification_follow_aggregation
+            columns:
+              - column:
+                  name: recipient_id
+              - column:
+                  name: type
+              - column:
+                  name: status
+        - createIndex:
+            tableName: notification_actors
+            indexName: idx_notification_actors_actor
+            columns:
+              - column:
+                  name: actor_id
+        - createIndex:
+            tableName: notification_all_actors
+            indexName: idx_notification_all_actors
+            columns:
+              - column:
+                  name: notification_id
+              - column:
+                  name: actor_id

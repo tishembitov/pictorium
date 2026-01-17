@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-users-table
+      author: pictorium
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: varchar(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: image_id
+                  type: varchar(100)
+              - column:
+                  name: banner_image_id
+                  type: varchar(100)
+              - column:
+                  name: description
+                  type: varchar(200)
+              - column:
+                  name: recommendation_created_at
+                  type: timestamp with time zone
+              - column:
+                  name: instagram
+                  type: varchar(100)
+              - column:
+                  name: tiktok
+                  type: varchar(100)
+              - column:
+                  name: telegram
+                  type: varchar(100)
+              - column:
+                  name: pinterest
+                  type: varchar(100)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false

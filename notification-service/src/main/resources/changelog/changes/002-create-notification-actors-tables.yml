@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-notification-actors-tables
+      author: pictorium
+      changes:
+        # Таблица для recentActorIds (List с порядком)
+        - createTable:
+            tableName: notification_actors
+            columns:
+              - column:
+                  name: notification_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_id
+                  type: varchar(255)
+              - column:
+                  name: position
+                  type: integer
+                  constraints:
+                    nullable: false
+
+        # CASCADE DELETE при удалении notification
+        - addForeignKeyConstraint:
+            baseTableName: notification_actors
+            baseColumnNames: notification_id
+            referencedTableName: notifications
+            referencedColumnNames: id
+            constraintName: fk_notification_actors_notification
+            onDelete: CASCADE
+
+        # Таблица для allActorIds (Set)
+        - createTable:
+            tableName: notification_all_actors
+            columns:
+              - column:
+                  name: notification_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            tableName: notification_all_actors
+            columnNames: notification_id, actor_id
+            constraintName: pk_notification_all_actors
+
+        # CASCADE DELETE при удалении notification
+        - addForeignKeyConstraint:
+            baseTableName: notification_all_actors
+            baseColumnNames: notification_id
+            referencedTableName: notifications
+            referencedColumnNames: id
+            constraintName: fk_notification_all_actors_notification
+            onDelete: CASCADE

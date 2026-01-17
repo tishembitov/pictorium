@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/001-create-tags-table.yml
+  - include:
+      file: db/changelog/changes/002-create-pins-table.yml
+  - include:
+      file: db/changelog/changes/003-create-pins-tags-table.yml
+  - include:
+      file: db/changelog/changes/004-create-boards-table.yml
+  - include:
+      file: db/changelog/changes/005-create-board-pins-table.yml
+  - include:
+      file: db/changelog/changes/006-create-selected-boards-table.yml
+  - include:
+      file: db/changelog/changes/007-create-comments-table.yml
+  - include:
+      file: db/changelog/changes/008-create-likes-table.yml
+  - include:
+      file: db/changelog/changes/009-add-indexes.yml
