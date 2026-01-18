@@ -1,0 +1,94 @@
+services:
+  postgres:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    command: >
+      postgres
+      -c log_statement=all
+      -c log_destination=stderr
+      -c max_connections=50
+      -c shared_buffers=64MB
+      -c log_min_duration_statement=100
+
+  postgres-keycloak:
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    command: >
+      postgres
+      -c max_connections=20
+      -c shared_buffers=32MB
+
+  keycloak:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+    environment:
+      KC_LOG_LEVEL: INFO
+      JAVA_OPTS_APPEND: "-Xms256m -Xmx384m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  minio:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 32M
+    command: redis-server --appendonly yes --maxmemory 50mb --maxmemory-policy allkeys-lru --loglevel verbose
+
+  elasticsearch:
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 512M
+    environment:
+      - "ES_JAVA_OPTS=-Xms384m -Xmx384m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kafka:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 384M
+    environment:
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx384m"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

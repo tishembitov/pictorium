@@ -5,11 +5,12 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:content123}
     driver-class-name: org.postgresql.Driver
 
-  hibernate:
-    ddl-auto: validate
-  show-sql: true
-  database: postgresql
-  database-platform: org.hibernate.dialect.PostgreSQLDialect
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yml

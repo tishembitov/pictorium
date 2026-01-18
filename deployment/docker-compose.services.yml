@@ -1,0 +1,269 @@
+services:
+  # ==================== CONFIG SERVER ====================
+  config-server:
+    container_name: pictorium-config-server
+    build:
+      context: ../config-server
+      dockerfile: ../config-server/Dockerfile
+    image: pictorium/config-server:${VERSION:-latest}
+    ports:
+      - "${CONFIG_SERVER_PORT:-8888}:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # ==================== EUREKA SERVER ====================
+  eureka-server:
+    container_name: pictorium-eureka-server
+    build:
+      context: ../eureka-server
+      dockerfile: ../eureka-server/Dockerfile
+    image: pictorium/eureka-server:${VERSION:-latest}
+    ports:
+      - "${EUREKA_PORT:-8761}:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # ==================== API GATEWAY ====================
+  api-gateway:
+    container_name: pictorium-api-gateway
+    build:
+      context: ../api-gateway
+      dockerfile: ../api-gateway/Dockerfile
+    image: pictorium/api-gateway:${VERSION:-latest}
+    ports:
+      - "${GATEWAY_PORT:-8222}:8222"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/pictorium
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8222/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # ==================== USER SERVICE ====================
+  user-service:
+    container_name: pictorium-user-service
+    build:
+      context: ../user-service
+      dockerfile: ../user-service/Dockerfile
+    image: pictorium/user-service:${VERSION:-latest}
+    ports:
+      - "${USER_SERVICE_PORT:-8010}:8010"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/users_db
+      SPRING_DATASOURCE_USERNAME: user_service
+      SPRING_DATASOURCE_PASSWORD: ${USER_DB_PASSWORD:-user123}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/pictorium
+      STORAGE_SERVICE_URL: http://storage-service:8088
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==================== CONTENT SERVICE ====================
+  content-service:
+    container_name: pictorium-content-service
+    build:
+      context: ../content-service
+      dockerfile: ../content-service/Dockerfile
+    image: pictorium/content-service:${VERSION:-latest}
+    ports:
+      - "${CONTENT_SERVICE_PORT:-8020}:8020"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/content_db
+      SPRING_DATASOURCE_USERNAME: content_user
+      SPRING_DATASOURCE_PASSWORD: ${CONTENT_DB_PASSWORD:-content123}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/pictorium
+      STORAGE_SERVICE_URL: http://storage-service:8088
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==================== STORAGE SERVICE ====================
+  storage-service:
+    container_name: pictorium-storage-service
+    build:
+      context: ../storage-service
+      dockerfile: ../storage-service/Dockerfile
+    image: pictorium/storage-service:${VERSION:-latest}
+    ports:
+      - "${STORAGE_SERVICE_PORT:-8088}:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/storage_db
+      SPRING_DATASOURCE_USERNAME: storage_user
+      SPRING_DATASOURCE_PASSWORD: ${STORAGE_DB_PASSWORD:-storage123}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==================== CHAT SERVICE ====================
+  chat-service:
+    container_name: pictorium-chat-service
+    build:
+      context: ../chat-service
+      dockerfile: ../chat-service/Dockerfile
+    image: pictorium/chat-service:${VERSION:-latest}
+    ports:
+      - "${CHAT_SERVICE_PORT:-8030}:8030"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/chat_db
+      SPRING_DATASOURCE_USERNAME: chat_user
+      SPRING_DATASOURCE_PASSWORD: ${CHAT_DB_PASSWORD:-chat123}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/pictorium
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8030/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==================== NOTIFICATION SERVICE ====================
+  notification-service:
+    container_name: pictorium-notification-service
+    build:
+      context: ../notification-service
+      dockerfile: ../notification-service/Dockerfile
+    image: pictorium/notification-service:${VERSION:-latest}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-8040}:8040"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
+      SPRING_DATASOURCE_USERNAME: notification_user
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-notification123}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/pictorium
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8040/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==================== SEARCH SERVICE ====================
+  search-service:
+    container_name: pictorium-search-service
+    build:
+      context: ../search-service
+      dockerfile: ../search-service/Dockerfile
+    image: pictorium/search-service:${VERSION:-latest}
+    ports:
+      - "${SEARCH_SERVICE_PORT:-8050}:8050"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/pictorium
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - pictorium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8050/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  pictorium-network:
+    external: true
+    name: pictorium-network

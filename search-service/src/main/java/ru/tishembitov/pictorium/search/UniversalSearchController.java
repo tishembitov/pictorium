@@ -18,7 +18,6 @@ import java.util.List;
 public class UniversalSearchController {
 
     private final UniversalSearchService universalSearchService;
-    private final SearchAnalyticsService analyticsService;
 
     @GetMapping
     public ResponseEntity<UniversalSearchResponse> searchAll(
@@ -37,10 +36,4 @@ public class UniversalSearchController {
         return ResponseEntity.ok(universalSearchService.searchAll(request));
     }
 
-    @GetMapping("/trending")
-    public ResponseEntity<List<TrendingQueryResponse>> getTrendingSearches(
-            @RequestParam(defaultValue = "10") @Min(1) @Max(50) Integer limit
-    ) {
-        return ResponseEntity.ok(analyticsService.getTrendingQueries(limit));
-    }
 }

@@ -5,9 +5,6 @@
 
 \echo 'Creating users...'
 
--- Keycloak
-CREATE USER keycloak WITH PASSWORD 'keycloak123';
-
 -- Application services
 CREATE USER content_user WITH PASSWORD 'content123';
 CREATE USER user_service WITH PASSWORD 'user123';
@@ -19,13 +16,6 @@ CREATE USER notification_user WITH PASSWORD 'notification123';
 
 
 \echo 'Creating databases...'
-
--- Keycloak database
-CREATE DATABASE keycloak
-    WITH OWNER = keycloak
-    ENCODING = 'UTF8'
-    LC_COLLATE = 'en_US.utf8'
-    LC_CTYPE = 'en_US.utf8';
 
 -- Content service database
 CREATE DATABASE content_db
@@ -48,6 +38,7 @@ CREATE DATABASE storage_db
     LC_COLLATE = 'en_US.utf8'
     LC_CTYPE = 'en_US.utf8';
 
+-- Chat service database
 CREATE DATABASE chat_db
     WITH OWNER = chat_user
     ENCODING = 'UTF8'
@@ -66,21 +57,11 @@ CREATE DATABASE notification_db
 
 \echo 'Granting database privileges...'
 
-GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
 GRANT ALL PRIVILEGES ON DATABASE content_db TO content_user;
 GRANT ALL PRIVILEGES ON DATABASE users_db TO user_service;
 GRANT ALL PRIVILEGES ON DATABASE storage_db TO storage_user;
 GRANT ALL PRIVILEGES ON DATABASE chat_db TO chat_user;
 GRANT ALL PRIVILEGES ON DATABASE notification_db TO notification_user;
-
--- Keycloak
-\c keycloak
-GRANT ALL ON SCHEMA public TO keycloak;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO keycloak;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO keycloak;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO keycloak;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO keycloak;
-\echo 'Keycloak database configured!'
 
 -- Content service
 \c content_db
@@ -127,14 +108,14 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO notification_us
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO notification_user;
 \echo 'Notification database configured!'
 
-\c pictorium
 
 \echo '=========================================='
 \echo 'Database initialization completed!'
 \echo ''
 \echo 'Created databases:'
-\echo '  - keycloak    (user: keycloak)'
-\echo '  - content_db  (user: content_user)'
-\echo '  - users_db    (user: user_service)'
-\echo '  - storage_db  (user: storage_user)'
+\echo '  - content_db      (user: content_user)'
+\echo '  - users_db        (user: user_service)'
+\echo '  - storage_db      (user: storage_user)'
+\echo '  - chat_db         (user: chat_user)'
+\echo '  - notification_db (user: notification_user)'
 \echo '=========================================='
