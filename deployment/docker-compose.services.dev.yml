@@ -2,14 +2,16 @@ x-service-defaults: &service-defaults
   deploy:
     resources:
       limits:
-        memory: 384M
+        memory: 512M
       reservations:
         memory: 256M
   environment:
     JAVA_TOOL_OPTIONS: >-
-      -Xms128m -Xmx256m
-      -XX:+UseG1GC
-      -XX:MaxGCPauseMillis=100
+      -XX:+UseContainerSupport
+      -XX:MaxRAMPercentage=60
+      -XX:InitialRAMPercentage=30
+      -XX:MaxMetaspaceSize=96m
+      -XX:+UseSerialGC
       -Dspring.jmx.enabled=false
     SPRING_PROFILES_ACTIVE: docker,dev
     LOGGING_LEVEL_ROOT: INFO
@@ -18,32 +20,38 @@ x-service-defaults: &service-defaults
 services:
   config-server:
     <<: *service-defaults
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
       interval: 15s
       start_period: 20s
+
+  eureka-server:
+    <<: *service-defaults
     deploy:
       resources:
         limits:
           memory: 256M
         reservations:
           memory: 128M
-
-  eureka-server:
-    <<: *service-defaults
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 15s
       start_period: 20s
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 128M
 
   api-gateway:
     <<: *service-defaults
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 192M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8222/actuator/health"]
       interval: 15s
@@ -51,29 +59,21 @@ services:
 
   user-service:
     <<: *service-defaults
+    environment:
+      SPRING_JPA_SHOW_SQL: "true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8010/actuator/health"]
       interval: 15s
       start_period: 30s
-    environment:
-      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m -XX:+UseG1GC
-      SPRING_PROFILES_ACTIVE: docker,dev
-      LOGGING_LEVEL_ROOT: INFO
-      LOGGING_LEVEL_RU_TISHEMBITOV: DEBUG
-      SPRING_JPA_SHOW_SQL: "true"
 
   content-service:
     <<: *service-defaults
+    environment:
+      SPRING_JPA_SHOW_SQL: "true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8020/actuator/health"]
       interval: 15s
       start_period: 30s
-    environment:
-      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m -XX:+UseG1GC
-      SPRING_PROFILES_ACTIVE: docker,dev
-      LOGGING_LEVEL_ROOT: INFO
-      LOGGING_LEVEL_RU_TISHEMBITOV: DEBUG
-      SPRING_JPA_SHOW_SQL: "true"
 
   storage-service:
     <<: *service-defaults
@@ -84,16 +84,12 @@ services:
 
   chat-service:
     <<: *service-defaults
+    environment:
+      SPRING_JPA_SHOW_SQL: "true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8030/actuator/health"]
       interval: 15s
       start_period: 30s
-    environment:
-      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m -XX:+UseG1GC
-      SPRING_PROFILES_ACTIVE: docker,dev
-      LOGGING_LEVEL_ROOT: INFO
-      LOGGING_LEVEL_RU_TISHEMBITOV: DEBUG
-      SPRING_JPA_SHOW_SQL: "true"
 
   notification-service:
     <<: *service-defaults
@@ -104,6 +100,12 @@ services:
 
   search-service:
     <<: *service-defaults
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 320M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8050/actuator/health"]
       interval: 15s
