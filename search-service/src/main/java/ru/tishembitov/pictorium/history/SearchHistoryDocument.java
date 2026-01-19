@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.history;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +11,7 @@ import org.springframework.data.elasticsearch.annotations.*;
 import java.time.Instant;
 
 @Document(indexName = "#{@environment.getProperty('index.search-history.name', 'search_history')}")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor

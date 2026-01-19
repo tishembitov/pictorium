@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.personalization;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Document(indexName = "#{@environment.getProperty('index.user-interests.name', 'user_interests')}")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor

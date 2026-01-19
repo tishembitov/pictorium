@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.pin;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.util.Set;
 @Document(indexName = "#{@environment.getProperty('index.pins.name', 'pins')}")
 @Setting(settingPath = "/elasticsearch/settings/pins-settings.json")
 @Mapping(mappingPath = "/elasticsearch/mappings/pins-mapping.json")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor

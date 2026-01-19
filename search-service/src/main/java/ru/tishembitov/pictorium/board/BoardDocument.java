@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.board;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.time.Instant;
 
 @Document(indexName = "#{@environment.getProperty('index.boards.name', 'boards')}")
 @Setting(settingPath = "/elasticsearch/settings/boards-settings.json")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor

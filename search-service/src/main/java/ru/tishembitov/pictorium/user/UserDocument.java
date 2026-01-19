@@ -1,5 +1,6 @@
 package ru.tishembitov.pictorium.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.time.Instant;
 
 @Document(indexName = "#{@environment.getProperty('index.users.name', 'users')}")
 @Setting(settingPath = "/elasticsearch/settings/users-settings.json")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor
