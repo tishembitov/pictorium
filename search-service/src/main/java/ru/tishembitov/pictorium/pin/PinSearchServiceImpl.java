@@ -187,9 +187,44 @@ public class PinSearchServiceImpl implements PinSearchService {
         }
     }
 
-    // === Private methods ===
-
     private Query buildPinQueryWithBoosts(SearchCriteria criteria, PersonalizationBoosts boosts) {
+        Query baseQuery = buildBaseQuery(criteria);
+
+        if (boosts.isEmpty()) {
+            return baseQuery;
+        }
+
+        List<FunctionScore> functions = new ArrayList<>();
+
+        for (Map.Entry<String, Float> entry : boosts.getTagBoosts().entrySet()) {
+            String tag = entry.getKey();
+            Double weight = entry.getValue().doubleValue();
+
+            functions.add(FunctionScore.of(f -> f
+                    .filter(TermQuery.of(t -> t.field("tags").value(tag))._toQuery())
+                    .weight(weight)
+            ));
+        }
+
+        for (Map.Entry<String, Float> entry : boosts.getAuthorBoosts().entrySet()) {
+            String authorId = entry.getKey();
+            Double weight = entry.getValue().doubleValue();
+
+            functions.add(FunctionScore.of(f -> f
+                    .filter(TermQuery.of(t -> t.field("authorId").value(authorId))._toQuery())
+                    .weight(weight)
+            ));
+        }
+
+        return FunctionScoreQuery.of(fs -> fs
+                .query(baseQuery)
+                .functions(functions)
+                .scoreMode(FunctionScoreMode.Sum)
+                .boostMode(FunctionBoostMode.Multiply)
+        )._toQuery();
+    }
+
+    private Query buildBaseQuery(SearchCriteria criteria) {
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
 
         if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
@@ -203,25 +238,13 @@ public class PinSearchServiceImpl implements PinSearchService {
 
         addFilters(boolBuilder, criteria);
 
-        if (!boosts.isEmpty()) {
-            for (Map.Entry<String, Float> entry : boosts.getTagBoosts().entrySet()) {
-                boolBuilder.should(TermQuery.of(t -> t
-                        .field("tags")
-                        .value(entry.getKey())
-                        .boost(entry.getValue())
-                )._toQuery());
-            }
+        BoolQuery built = boolBuilder.build();
 
-            for (Map.Entry<String, Float> entry : boosts.getAuthorBoosts().entrySet()) {
-                boolBuilder.should(TermQuery.of(t -> t
-                        .field("authorId")
-                        .value(entry.getKey())
-                        .boost(entry.getValue())
-                )._toQuery());
-            }
+        if (built.must().isEmpty() && built.filter().isEmpty()) {
+            return MatchAllQuery.of(m -> m)._toQuery();
         }
 
-        return boolBuilder.build()._toQuery();
+        return built._toQuery();
     }
 
     private Query buildTextQuery(String query, Boolean fuzzy, List<String> fields) {
@@ -262,13 +285,19 @@ public class PinSearchServiceImpl implements PinSearchService {
 
         if (criteria.getCreatedFrom() != null) {
             boolBuilder.filter(RangeQuery.of(r -> r
-                    .date(d -> d.field("createdAt").gte(criteria.getCreatedFrom().toString()))
+                    .date(d -> d
+                            .field("createdAt")
+                            .gte(String.valueOf(criteria.getCreatedFrom().toEpochMilli()))
+                    )
             )._toQuery());
         }
 
         if (criteria.getCreatedTo() != null) {
             boolBuilder.filter(RangeQuery.of(r -> r
-                    .date(d -> d.field("createdAt").lte(criteria.getCreatedTo().toString()))
+                    .date(d -> d
+                            .field("createdAt")
+                            .lte(String.valueOf(criteria.getCreatedTo().toEpochMilli()))
+                    )
             )._toQuery());
         }
     }
