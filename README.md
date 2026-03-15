@@ -3,7 +3,7 @@
 # 🎨 Pictorium
 
 **Pictorium** is a full-featured image sharing platform inspired by Pinterest. Built on a microservices architecture using Spring Boot, Kafka, Elasticsearch, WebSocket, and Keycloak.
-
+> **Frontend** — [pictorium-ui](https://github.com/tishembitov/pictorium-ui)
 ---
 
 ## 📋 Table of Contents
